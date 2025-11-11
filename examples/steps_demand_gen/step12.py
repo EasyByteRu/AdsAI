@@ -460,13 +460,25 @@ class UploadDialog:
                 if(!input){ const pane=root.closest?.('.cdk-overlay-pane')||document;
                   for(const s of sels){ const v=pane.querySelector(s); if(v){ input=v; break; } } }
                 if(!input) return null;
+
+                // Прокручиваем drop-zone в видимую область перед активацией
+                const dropZone=input.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader');
+                try{ (dropZone||input).scrollIntoView({block:'center',inline:'center'}); }catch(_){ }
+
+                // Делаем input видимым с большими размерами для лучшей совместимости
                 const st=input.style;
                 st.setProperty('display','block','important'); st.setProperty('visibility','visible','important'); st.setProperty('opacity','1','important');
-                st.setProperty('position','absolute','important'); st.setProperty('left','0px','important'); st.setProperty('top','0px','important');
-                st.setProperty('width','2px','important'); st.setProperty('height','2px','important'); st.setProperty('z-index','2147483647','important');
+                st.setProperty('position','absolute','important'); st.setProperty('left','50px','important'); st.setProperty('top','50px','important');
+                st.setProperty('width','50px','important'); st.setProperty('height','50px','important'); st.setProperty('z-index','2147483647','important');
                 st.setProperty('pointer-events','auto','important');
                 input.removeAttribute('hidden'); input.removeAttribute('aria-hidden'); input.classList?.remove?.('hidden','cdk-visually-hidden');
-                try{ (input.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader')||input).scrollIntoView({block:'center'}) }catch(_){ }
+
+                // Активируем drop-zone кликом (может помочь показать input)
+                if(dropZone){
+                  try{ dropZone.click(); }catch(_){}
+                  try{ dropZone.focus(); }catch(_){}
+                }
+
                 return input;
                 """,
                 scope,
@@ -976,11 +988,22 @@ class Uploader:
                 """
                 const old=arguments[0], tok=String(arguments[1]||'').trim();
                 const cs=document.querySelectorAll('input[type="file"]'); if(!cs||!cs.length) return old;
-                const fresh=cs[cs.length-1]; const st=fresh.style;
+                const fresh=cs[cs.length-1];
+
+                // Прокручиваем в видимую область
+                const dropZone=fresh.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader');
+                try{ (dropZone||fresh).scrollIntoView({block:'center',inline:'center'}); }catch(_){ }
+
+                // Делаем видимым с большими размерами
+                const st=fresh.style;
                 st.setProperty('display','block','important'); st.setProperty('visibility','visible','important'); st.setProperty('opacity','1','important');
-                st.setProperty('position','absolute','important'); st.setProperty('left','0px','important'); st.setProperty('top','0px','important');
-                st.setProperty('width','2px','important'); st.setProperty('height','2px','important'); st.setProperty('z-index','2147483647','important'); st.setProperty('pointer-events','auto','important');
+                st.setProperty('position','absolute','important'); st.setProperty('left','50px','important'); st.setProperty('top','50px','important');
+                st.setProperty('width','50px','important'); st.setProperty('height','50px','important'); st.setProperty('z-index','2147483647','important'); st.setProperty('pointer-events','auto','important');
                 fresh.removeAttribute('hidden'); fresh.removeAttribute('aria-hidden'); fresh.classList?.remove?.('hidden','cdk-visually-hidden');
+
+                // Активируем drop-zone
+                if(dropZone){ try{ dropZone.click(); }catch(_){} try{ dropZone.focus(); }catch(_){} }
+
                 if(tok){ try{ fresh.setAttribute('data-step12-token', tok); window.__step12Inputs=window.__step12Inputs||{}; window.__step12Inputs[tok]=fresh; }catch(_){ } }
                 return fresh;
                 """,
@@ -1097,6 +1120,24 @@ class Uploader:
         start_count = int((self.dlg.snapshot() or {}).get("previews") or 0)
         logger.info("step12: attach '%s' (start previews=%d)", base_name, start_count)
         self._log_input_snapshot(input_el, label=f"{self.kind} pre-attach(one)")
+
+        # Проверяем rect и если он нулевой, активируем input заново
+        try:
+            rect_info = self.drv.execute_script(
+                "const r=arguments[0].getBoundingClientRect(); return {w:r.width,h:r.height,t:r.top,l:r.left};",
+                input_el
+            ) or {}
+            if (rect_info.get('w') or 0) == 0 or (rect_info.get('h') or 0) == 0:
+                logger.warning("step12: input[type=file] имеет нулевой rect %s — активируем заново", rect_info)
+                # Кликаем по drop-zone и активируем кнопку Upload from computer
+                self.dlg._click_upload_from_computer()
+                time.sleep(0.3)
+                # Заново получаем input
+                input_el = self.dlg.locate_input(try_click_upload_button=True) or input_el
+                token = _ensure_input_token(self.drv, input_el, token)
+                self._log_input_snapshot(input_el, label=f"{self.kind} post-reactivation")
+        except Exception as exc:
+            logger.debug("step12: проверка rect не удалась: %s", exc)
 
         try:
             self.drv.execute_script("try{arguments[0].value='';}catch(_){ }", input_el)

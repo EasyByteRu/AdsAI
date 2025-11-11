@@ -442,7 +442,7 @@ class UploadDialog:
 
     def _ensure_file_input_visible(self, scope: WebElement) -> Optional[WebElement]:
         try:
-            return self.drv.execute_script(
+            result = self.drv.execute_script(
                 """
                 const root=arguments[0];
                 const sels=[
@@ -450,64 +450,333 @@ class UploadDialog:
                   '.asset-uploader input[type="file"]','.drop-body input[type="file"]','assets-upload-tab input[type="file"]',
                   '.upload-button input[type="file"]','input[type="file"][accept*="image"]','input[type="file"][multiple]','input[type="file"]'
                 ];
+
+                // Log all input[type=file] elements in the document
+                const allInputs = document.querySelectorAll('input[type="file"]');
+                const inputsInfo = [];
+                allInputs.forEach((inp, idx) => {
+                  const r = inp.getBoundingClientRect();
+                  const cs = getComputedStyle(inp);
+                  inputsInfo.push({
+                    index: idx,
+                    selector: inp.id ? `#${inp.id}` : (inp.className || '(no class)'),
+                    rect: {w: r.width, h: r.height, t: r.top, l: r.left},
+                    display: cs.display,
+                    visibility: cs.visibility,
+                    opacity: cs.opacity,
+                    position: cs.position,
+                    parent: inp.parentElement?.tagName || '?',
+                    inRoot: root.contains(inp)
+                  });
+                });
+
                 let input=null;
-                for(const s of sels){ try{ const v=root.querySelector(s); if(v){ input=v; break; } }catch(_){ } }
-                if(!input){ const pane=root.closest?.('.cdk-overlay-pane')||document;
-                  for(const s of sels){ const v=pane.querySelector(s); if(v){ input=v; break; } } }
-                if(!input) return null;
+                let matchedSelector = null;
+
+                // Try to find in root first
+                for(const s of sels){
+                  try{
+                    const v=root.querySelector(s);
+                    if(v){
+                      input=v;
+                      matchedSelector = `root:${s}`;
+                      break;
+                    }
+                  }catch(_){ }
+                }
+
+                // If not found, try in pane
+                if(!input){
+                  const pane=root.closest?.('.cdk-overlay-pane')||document;
+                  for(const s of sels){
+                    const v=pane.querySelector(s);
+                    if(v){
+                      input=v;
+                      matchedSelector = `pane:${s}`;
+                      break;
+                    }
+                  }
+                }
+
+                if(!input) {
+                  return {found: false, allInputs: inputsInfo, matchedSelector: null};
+                }
+
+                // Capture initial state
+                const rBefore = input.getBoundingClientRect();
+                const csBefore = getComputedStyle(input);
+                const initialState = {
+                  rect: {w: rBefore.width, h: rBefore.height, t: rBefore.top, l: rBefore.left},
+                  display: csBefore.display,
+                  visibility: csBefore.visibility,
+                  opacity: csBefore.opacity,
+                  position: csBefore.position,
+                  zIndex: csBefore.zIndex
+                };
+
+                // Apply visibility styles
                 const st=input.style;
-                st.setProperty('display','block','important'); st.setProperty('visibility','visible','important'); st.setProperty('opacity','1','important');
-                st.setProperty('position','absolute','important'); st.setProperty('left','0px','important'); st.setProperty('top','0px','important');
-                st.setProperty('width','2px','important'); st.setProperty('height','2px','important'); st.setProperty('z-index','2147483647','important');
+                st.setProperty('display','block','important');
+                st.setProperty('visibility','visible','important');
+                st.setProperty('opacity','1','important');
+                st.setProperty('position','absolute','important');
+                st.setProperty('left','0px','important');
+                st.setProperty('top','0px','important');
+                st.setProperty('width','2px','important');
+                st.setProperty('height','2px','important');
+                st.setProperty('z-index','2147483647','important');
                 st.setProperty('pointer-events','auto','important');
-                input.removeAttribute('hidden'); input.removeAttribute('aria-hidden'); input.classList?.remove?.('hidden','cdk-visually-hidden');
-                try{ (input.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader')||input).scrollIntoView({block:'center'}) }catch(_){ }
-                return input;
+                input.removeAttribute('hidden');
+                input.removeAttribute('aria-hidden');
+                input.classList?.remove?.('hidden','cdk-visually-hidden');
+
+                // Force reflow
+                void input.offsetHeight;
+
+                try{
+                  (input.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader')||input).scrollIntoView({block:'center'})
+                }catch(_){ }
+
+                // Capture final state
+                const rAfter = input.getBoundingClientRect();
+                const csAfter = getComputedStyle(input);
+                const finalState = {
+                  rect: {w: rAfter.width, h: rAfter.height, t: rAfter.top, l: rAfter.left},
+                  display: csAfter.display,
+                  visibility: csAfter.visibility,
+                  opacity: csAfter.opacity,
+                  position: csAfter.position,
+                  zIndex: csAfter.zIndex
+                };
+
+                return {
+                  found: true,
+                  element: input,
+                  allInputs: inputsInfo,
+                  matchedSelector: matchedSelector,
+                  initialState: initialState,
+                  finalState: finalState
+                };
                 """,
                 scope,
             )
-        except Exception:
+
+            if isinstance(result, dict):
+                logger.info("step13: [%s] _ensure_file_input_visible diagnostics:", self.kind)
+                logger.info("step13: [%s]   found=%s, matchedSelector=%s", self.kind, result.get('found'), result.get('matchedSelector'))
+                logger.info("step13: [%s]   allInputs in document: %s", self.kind, result.get('allInputs'))
+                if result.get('found'):
+                    logger.info("step13: [%s]   initialState: %s", self.kind, result.get('initialState'))
+                    logger.info("step13: [%s]   finalState: %s", self.kind, result.get('finalState'))
+                    return result.get('element')
+                else:
+                    logger.warning("step13: [%s] NO input[type=file] found in root or pane!", self.kind)
+                    return None
+            else:
+                # Old behavior - element returned directly
+                return result
+        except Exception as exc:
+            logger.error("step13: [%s] _ensure_file_input_visible exception: %s", self.kind, exc, exc_info=True)
             return None
 
     def _click_upload_from_computer(self) -> bool:
         if not self.root:
+            logger.warning("step13: [%s] _click_upload_from_computer: root is None", self.kind)
             return False
         try:
-            btn = self.drv.execute_script(
+            result = self.drv.execute_script(
                 """
                 const dlg=arguments[0]; const keys=new Set((arguments[1]||[]).map(s=>String(s||'').toLowerCase()));
                 const isVis=e=>{ if(!e) return false; const cs=getComputedStyle(e),r=e.getBoundingClientRect();
                   if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity||'1')<.2) return false; return r.width>10&&r.height>10&&r.right>0&&r.bottom>0; };
                 const btns=[...dlg.querySelectorAll('button,[role=button],material-button,a[role=button]')].filter(isVis);
-                return btns.find(b=>{const t=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')).toLowerCase();
+
+                // Log all visible buttons
+                const allBtnsInfo = btns.map(b => {
+                  const t = ((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')).toLowerCase();
+                  return {text: t.substring(0, 50), matches: [...keys].some(k=>t.includes(k))};
+                });
+
+                const matchedBtn = btns.find(b=>{const t=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')).toLowerCase();
                   return [...keys].some(k=>t.includes(k)); }) || null;
+
+                return {button: matchedBtn, allButtons: allBtnsInfo};
                 """,
                 self.root, list(CHOOSE_FILES_TEXT_MATCHES),
             )
-            if not btn:
-                logger.info("step13: [%s] кнопка 'Upload from computer' не найдена", self.kind)
-                return False
+
+            logger.info("step13: [%s] _click_upload_from_computer: searching for button with keys %s",
+                       self.kind, list(CHOOSE_FILES_TEXT_MATCHES)[:3])
+
+            if isinstance(result, dict):
+                logger.info("step13: [%s]   allButtons found: %s", self.kind, result.get('allButtons'))
+                btn = result.get('button')
+                if not btn:
+                    logger.warning("step13: [%s] кнопка 'Upload from computer' не найдена среди %d кнопок",
+                                 self.kind, len(result.get('allButtons', [])))
+                    return False
+            else:
+                # Old behavior
+                btn = result
+                if not btn:
+                    logger.info("step13: [%s] кнопка 'Upload from computer' не найдена", self.kind)
+                    return False
+
             ok = _mouse_click(self.drv, btn)
             logger.info("step13: [%s] клик по 'Upload from computer' -> %s", self.kind, ok)
             return ok
-        except Exception:
+        except Exception as exc:
+            logger.error("step13: [%s] _click_upload_from_computer exception: %s", self.kind, exc, exc_info=True)
             return False
+
+    def _ensure_file_input_visible_aggressive(self, scope: WebElement) -> Optional[WebElement]:
+        """More aggressive approach: also make parent elements visible."""
+        try:
+            result = self.drv.execute_script(
+                """
+                const root=arguments[0];
+                const sels=[
+                  'drop-zone input[type="file"]','.drop-zone input[type="file"]','.drop-zone-container input[type="file"]',
+                  '.asset-uploader input[type="file"]','.drop-body input[type="file"]','assets-upload-tab input[type="file"]',
+                  '.upload-button input[type="file"]','input[type="file"][accept*="image"]','input[type="file"][multiple]','input[type="file"]'
+                ];
+
+                // Try to find input
+                let input=null;
+                for(const s of sels){
+                  try{
+                    const v=root.querySelector(s);
+                    if(v){ input=v; break; }
+                  }catch(_){ }
+                }
+                if(!input){
+                  const pane=root.closest?.('.cdk-overlay-pane')||document;
+                  for(const s of sels){
+                    const v=pane.querySelector(s);
+                    if(v){ input=v; break; }
+                  }
+                }
+
+                if(!input) return {found: false, strategy: 'none'};
+
+                // Strategy 1: Make input and all parents visible
+                const applyVisibility = (el) => {
+                  const st=el.style;
+                  st.setProperty('display','block','important');
+                  st.setProperty('visibility','visible','important');
+                  st.setProperty('opacity','1','important');
+                  st.setProperty('position','absolute','important');
+                  st.setProperty('left','0px','important');
+                  st.setProperty('top','0px','important');
+                  st.setProperty('width','2px','important');
+                  st.setProperty('height','2px','important');
+                  st.setProperty('z-index','2147483647','important');
+                  st.setProperty('pointer-events','auto','important');
+                  el.removeAttribute('hidden');
+                  el.removeAttribute('aria-hidden');
+                  el.classList?.remove?.('hidden','cdk-visually-hidden');
+                };
+
+                applyVisibility(input);
+
+                // Also make parent containers visible (but keep their natural size)
+                let parent = input.parentElement;
+                let depth = 0;
+                while(parent && depth < 5) {
+                  const pst = parent.style;
+                  pst.setProperty('display','block','important');
+                  pst.setProperty('visibility','visible','important');
+                  pst.setProperty('opacity','1','important');
+                  parent.removeAttribute('hidden');
+                  parent.removeAttribute('aria-hidden');
+                  parent.classList?.remove?.('hidden','cdk-visually-hidden');
+
+                  if(parent.tagName?.toLowerCase() === 'drop-zone' ||
+                     parent.classList?.contains('drop-zone') ||
+                     parent.classList?.contains('asset-uploader')) {
+                    break;
+                  }
+                  parent = parent.parentElement;
+                  depth++;
+                }
+
+                // Force reflow
+                void input.offsetHeight;
+
+                try{
+                  (input.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader')||input).scrollIntoView({block:'center'})
+                }catch(_){ }
+
+                // Check final state
+                const rAfter = input.getBoundingClientRect();
+                return {
+                  found: true,
+                  element: input,
+                  strategy: 'aggressive-with-parents',
+                  finalRect: {w: rAfter.width, h: rAfter.height, t: rAfter.top, l: rAfter.left}
+                };
+                """,
+                scope,
+            )
+
+            if isinstance(result, dict):
+                logger.info("step13: [%s] _ensure_file_input_visible_aggressive: found=%s, strategy=%s, finalRect=%s",
+                           self.kind, result.get('found'), result.get('strategy'), result.get('finalRect'))
+                if result.get('found'):
+                    return result.get('element')
+            return None
+        except Exception as exc:
+            logger.error("step13: [%s] _ensure_file_input_visible_aggressive exception: %s", self.kind, exc, exc_info=True)
+            return None
 
     def locate_input(self, *, try_click_upload_button: bool = True) -> Optional[WebElement]:
         if not self.root:
+            logger.warning("step13: [%s] locate_input: root is None", self.kind)
             return None
+
+        logger.info("step13: [%s] locate_input: начинаем поиск input[type=file], try_click_upload_button=%s",
+                   self.kind, try_click_upload_button)
+
         el = self._ensure_file_input_visible(self.root)
         logger.info("step13: [%s] поиск input[type=file] первичный -> %s", self.kind, bool(el))
+
         if el:
+            logger.info("step13: [%s] input найден при первичном поиске", self.kind)
             return el
+
+        # Try aggressive approach
+        logger.info("step13: [%s] первичный поиск не удался, пробуем агрессивный подход", self.kind)
+        el = self._ensure_file_input_visible_aggressive(self.root)
+        if el:
+            logger.info("step13: [%s] input найден агрессивным методом", self.kind)
+            return el
+
         if try_click_upload_button:
-            self._click_upload_from_computer()
+            logger.info("step13: [%s] input не найден, пытаемся кликнуть 'Upload from computer'", self.kind)
+            click_ok = self._click_upload_from_computer()
+            logger.info("step13: [%s] результат клика на 'Upload from computer': %s", self.kind, click_ok)
+
+            if click_ok:
+                logger.info("step13: [%s] после клика ждём появления input (до 35 попыток)", self.kind)
+
             for i in range(35):
-                el = self._ensure_file_input_visible(self.root)
-                logger.debug("step13: [%s] re-check input[type=file] #%d -> %s", self.kind, i + 1, bool(el))
-                if el:
-                    return el
                 time.sleep(0.15)
+
+                # Alternate between regular and aggressive approaches
+                if i % 2 == 0:
+                    el = self._ensure_file_input_visible(self.root)
+                else:
+                    el = self._ensure_file_input_visible_aggressive(self.root)
+
+                if i < 5 or i % 5 == 0 or el:
+                    logger.info("step13: [%s] re-check input[type=file] #%d (method=%s) -> %s",
+                              self.kind, i + 1, "aggressive" if i % 2 == 1 else "regular", bool(el))
+                if el:
+                    logger.info("step13: [%s] input найден после %d попыток", self.kind, i + 1)
+                    return el
+
+            logger.warning("step13: [%s] input не найден после 35 попыток повторного поиска", self.kind)
+
         return None
 
     # ---------- State snapshots / save ----------

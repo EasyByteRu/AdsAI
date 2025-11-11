@@ -2,12 +2,11 @@
 """
 examples/steps/step12.py
 
-Шаг 12 (Demand Gen) — устойчивый аплоад ассетов (изображений/логотипов) в UI Google Ads.
+Шаг 12 (Demand Gen) — устойчивый аплоад изображений в UI Google Ads.
 Полный редизайн + детальные логи и диагностика.
 
 СОХРАНЁННЫЙ КОНТРАКТ:
 - run_step12(driver, *, mode, seed_assets, provided_assets, business_name, usp, site_url,
-             campaign_context, desired_image_count, desired_logo_count, timeout_total, emit) -> Dict
 - run(...) — совместимость.
 
 Ключевые улучшения:
@@ -1449,7 +1448,6 @@ def run_step12(
     site_url: Optional[str] = None,
     campaign_context: Optional[str] = None,
     desired_image_count: int = DEFAULT_IMAGE_COUNT,
-    desired_logo_count: int = DEFAULT_LOGO_COUNT,
     timeout_total: float = 240.0,
     emit: Optional[Callable[[str], None]] = None,
 ) -> Dict[str, Any]:
@@ -1468,9 +1466,9 @@ def run_step12(
     else:
         normalized_mode = "ai_only"
 
-    _emit(emit, f"Шаг 12: подготовка креативов ({normalized_mode})")
-    logger.info("step12 start | mode=%s | business=%s | site=%s | desired images=%d logos=%d",
-                normalized_mode, business_name or "-", site_url or "-", desired_image_count, desired_logo_count)
+    _emit(emit, f"Шаг 12: подготовка изображений ({normalized_mode})")
+    logger.info("step12 start | mode=%s | business=%s | site=%s | desired images=%d",
+                normalized_mode, business_name or "-", site_url or "-", desired_image_count)
 
     storage_dir = _ensure_storage_dir(business_name, site_url)
     tm.mark("init")
@@ -1487,13 +1485,10 @@ def run_step12(
         seed_notes = " | ".join(agg)[:600]
 
     manual_images = _collect_manual_assets((provided_assets or {}).get("images"), dest_dir=Path(storage_dir))
-    manual_logos  = _collect_manual_assets((provided_assets or {}).get("logos"),  dest_dir=Path(storage_dir))
     tm.mark("collect_manual_assets")
 
     image_prompts: List[str] = []
-    logo_prompts:  List[str] = []
     images_to_upload: List[str] = []
-    logos_to_upload:  List[str] = []
     generation_note = ""
 
     # ---------- Изображения ----------
@@ -1522,33 +1517,6 @@ def run_step12(
 
     images_to_upload = _dedupe_files(images_to_upload)
 
-    # ---------- Логотипы ----------
-    if normalized_mode == "manual":
-        logos_to_upload = manual_logos[: max(1, desired_logo_count)] if manual_logos else []
-        if not logos_to_upload:
-            _emit(emit, "Логотипы не переданы — можно загрузить позже вручную.")
-    else:
-        _emit(emit, "Генерирую промпты для логотипов")
-        cnt_logo = max(1, desired_logo_count)
-        logo_prompts = _llm_generate_logo_prompts(count=cnt_logo, business_name=business_name, usp=usp, seed_notes=seed_notes)
-        tm.mark("generate_logo_prompts")
-
-        _emit(emit, f"Генерирую логотипы через Runware ({len(logo_prompts)} шт.)")
-        logos_to_upload = _generate_images_via_runware(
-            prompts=logo_prompts, dest_dir=Path(storage_dir), label_prefix="demandgen-logo",
-            width=RUNWARE_LOGO_SIZE, height=RUNWARE_LOGO_SIZE,
-        )
-        tm.mark("generate_logos_runware")
-
-        if len(logos_to_upload) < 1 and manual_logos:
-            _emit(emit, "Использую предоставленные логотипы (генерация не удалась)")
-            logos_to_upload = manual_logos[: max(1, desired_logo_count)]
-
-    logos_to_upload = _dedupe_files(logos_to_upload)
-
-    if not images_to_upload:
-        raise Step12Error("Не удалось подготовить изображения для загрузки.")
-
     # ---------- Загрузка в UI ----------
     with _ConfirmWatcher(driver, emit=emit):
         # Images
@@ -1572,57 +1540,3 @@ def run_step12(
         dlg_images.wait_closed(timeout=20.0)
         tm.mark("upload_images")
 
-        # Logos
-        if logos_to_upload:
-            _emit(emit, "Загружаю логотипы")
-            dlg_logos = UploadDialog(driver, "logos", storage_dir=Path(storage_dir))
-            dlg_logos.open()
-            if not dlg_logos.ensure_upload_tab():
-                logger.warning("step12: вкладка Upload (logos) не активировалась — tolerant режим")
-            time.sleep(0.2)
-
-            _maybe_shot(driver, Path(storage_dir) / "debug" / "before_attach_logos.png", "before-attach-logos")
-
-            uploader_logos = Uploader(driver, dlg_logos, kind="logos")
-            uploader_logos.attach(logos_to_upload, prefer_cdp=True)
-
-            if not dlg_logos.wait_save_and_click(min_wait=5.0, timeout=180.0):
-                snap2 = dlg_logos.snapshot()
-                logger.info("step12: logos Save не активировалась, финальный snap=%s", snap2)
-                _maybe_shot(driver, Path(storage_dir) / "debug" / "logos_save_not_active.png", "logos-save-not-active")
-                raise UploadTimeout("Кнопка сохранения логотипов не активировалась.")
-            dlg_logos.wait_closed(timeout=20.0)
-            tm.mark("upload_logos")
-        else:
-            logger.info("step12: логотипы пропущены (нет файлов).")
-
-    duration_ms = int((time.time() - started) * 1000)
-    logger.info("step12 done (%d ms) | uploaded images=%d logos=%d | mode=%s",
-                duration_ms, len(images_to_upload), len(logos_to_upload), normalized_mode)
-
-    return {
-        "mode": normalized_mode,
-        "duration_ms": duration_ms,
-        "storage_dir": str(storage_dir),
-        "images": {
-            "mode": normalized_mode,
-            "source": "llm+runware" if normalized_mode != "manual" else "manual",
-            "files": images_to_upload,
-            "prompts": image_prompts,
-            "note": generation_note,
-        },
-        "logos": {
-            "mode": normalized_mode,
-            "source": "llm+runware" if normalized_mode != "manual" else "manual",
-            "files": logos_to_upload,
-            "prompts": logo_prompts,
-            "note": "",
-        },
-        "timing_breakdown": [{"stage": name, "duration_ms": dur} for name, dur in tm.records],
-        "campaign_context": campaign_context,
-    }
-
-
-def run(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-    """Совместимость с автозапуском через модульный загрузчик."""
-    return run_step12(*args, **kwargs)

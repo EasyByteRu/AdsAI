@@ -614,7 +614,7 @@ class UploadDialog:
                 """
                 const pane=arguments[0]?.closest?.('.cdk-overlay-pane')||arguments[0]||document;
                 const sels=arguments[1]||[];
-                const isVis=el=>{ if(!el) return false; const cs=getComputedStyle(el),r=e.getBoundingClientRect?.()||{width:0,height:0,bottom:0,right:0};
+                const isVis=el=>{ if(!el) return false; const cs=getComputedStyle(el),r=el.getBoundingClientRect?.()||{width:0,height:0,bottom:0,right:0};
                   if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity||'1')<.2) return false; return r.width>10&&r.height>10&&r.bottom>0&&r.right>0; };
                 for(const s of sels){ const found=pane.querySelectorAll(s); for(const b of found){ if(isVis(b)) return b; } }
                 if(pane!==document){ for(const s of sels){ const found=document.querySelectorAll(s); for(const b of found){ if(isVis(b)) return b; } } }
@@ -1416,7 +1416,6 @@ def run_step13(
     usp: Optional[str] = None,
     site_url: Optional[str] = None,
     campaign_context: Optional[str] = None,
-    desired_image_count: int = DEFAULT_IMAGE_COUNT,
     desired_logo_count: int = DEFAULT_LOGO_COUNT,
     timeout_total: float = 240.0,
     emit: Optional[Callable[[str], None]] = None,
@@ -1436,8 +1435,9 @@ def run_step13(
     else:
         normalized_mode = "ai_only"
 
-    _emit(emit, f"Шаг 12: подготовка логотипов ({normalized_mode})")
-    logger.info("step12 start | mode=%s | business=%s | site=%s | desired logos=%d",
+    _emit(emit, f"Шаг 13: подготовка логотипов ({normalized_mode})")
+    logger.info("step13 start | mode=%s | business=%s | site=%s | desired logos=%d",
+                normalized_mode, business_name or "-", site_url or "-", desired_logo_count)
 
     storage_dir = _ensure_storage_dir(business_name, site_url)
     tm.mark("init")
@@ -1483,8 +1483,56 @@ def run_step13(
 
     logos_to_upload = _dedupe_files(logos_to_upload)
 
-    if not images_to_upload:
-        raise Step12Error("Не удалось подготовить изображения для загрузки.")
+    if not logos_to_upload:
+        logger.warning("step13: логотипы не подготовлены, но продолжаем (можно загрузить позже)")
+        # Не выбрасываем ошибку для логотипов, так как они опциональны
 
     # ---------- Загрузка в UI ----------
     with _ConfirmWatcher(driver, emit=emit):
+        # Logos
+        if logos_to_upload:
+            _emit(emit, "Загружаю логотипы")
+            dlg_logos = UploadDialog(driver, "logos", storage_dir=Path(storage_dir))
+            dlg_logos.open()
+            if not dlg_logos.ensure_upload_tab():
+                logger.warning("step13: вкладка Upload (logos) не активировалась — tolerant режим")
+            time.sleep(0.2)
+
+            _maybe_shot(driver, Path(storage_dir) / "debug" / "before_attach_logos.png", "before-attach-logos")
+
+            uploader_logos = Uploader(driver, dlg_logos, kind="logos")
+            uploader_logos.attach(logos_to_upload, prefer_cdp=True)
+
+            if not dlg_logos.wait_save_and_click(min_wait=5.0, timeout=180.0):
+                snap = dlg_logos.snapshot()
+                logger.info("step13: logos Save не активировалась, финальный snap=%s", snap)
+                _maybe_shot(driver, Path(storage_dir) / "debug" / "logos_save_not_active.png", "logos-save-not-active")
+                raise UploadTimeout("Кнопка сохранения логотипов не активировалась.")
+            dlg_logos.wait_closed(timeout=20.0)
+            tm.mark("upload_logos")
+        else:
+            logger.info("step13: логотипы пропущены (нет файлов).")
+
+    duration_ms = int((time.time() - started) * 1000)
+    logger.info("step13 done (%d ms) | uploaded logos=%d | mode=%s",
+                duration_ms, len(logos_to_upload), normalized_mode)
+
+    return {
+        "mode": normalized_mode,
+        "duration_ms": duration_ms,
+        "storage_dir": str(storage_dir),
+        "logos": {
+            "mode": normalized_mode,
+            "source": "llm+runware" if normalized_mode != "manual" else "manual",
+            "files": logos_to_upload,
+            "prompts": logo_prompts,
+            "note": generation_note,
+        },
+        "timing_breakdown": [{"stage": name, "duration_ms": dur} for name, dur in tm.records],
+        "campaign_context": campaign_context,
+    }
+
+
+def run(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+    """Совместимость с автозапуском через модульный загрузчик."""
+    return run_step13(*args, **kwargs)

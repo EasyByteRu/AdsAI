@@ -613,7 +613,7 @@ class UploadDialog:
                 """
                 const pane=arguments[0]?.closest?.('.cdk-overlay-pane')||arguments[0]||document;
                 const sels=arguments[1]||[];
-                const isVis=el=>{ if(!el) return false; const cs=getComputedStyle(el),r=e.getBoundingClientRect?.()||{width:0,height:0,bottom:0,right:0};
+                const isVis=el=>{ if(!el) return false; const cs=getComputedStyle(el),r=el.getBoundingClientRect?.()||{width:0,height:0,bottom:0,right:0};
                   if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity||'1')<.2) return false; return r.width>10&&r.height>10&&r.bottom>0&&r.right>0; };
                 for(const s of sels){ const found=pane.querySelectorAll(s); for(const b of found){ if(isVis(b)) return b; } }
                 if(pane!==document){ for(const s of sels){ const found=document.querySelectorAll(s); for(const b of found){ if(isVis(b)) return b; } } }
@@ -1416,7 +1416,6 @@ def run_step12(
     site_url: Optional[str] = None,
     campaign_context: Optional[str] = None,
     desired_image_count: int = DEFAULT_IMAGE_COUNT,
-    desired_logo_count: int = DEFAULT_LOGO_COUNT,
     timeout_total: float = 240.0,
     emit: Optional[Callable[[str], None]] = None,
 ) -> Dict[str, Any]:
@@ -1435,7 +1434,7 @@ def run_step12(
     else:
         normalized_mode = "ai_only"
 
-    _emit(emit, f"Шаг 12: подготовка креативов ({normalized_mode})")
+    _emit(emit, f"Шаг 12: подготовка изображений ({normalized_mode})")
     logger.info("step12 start | mode=%s | business=%s | site=%s | desired images=%d",
                 normalized_mode, business_name or "-", site_url or "-", desired_image_count)
 

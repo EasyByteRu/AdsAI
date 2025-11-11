@@ -1,0 +1,15 @@
+{
+  "_meta": {
+    "version": 1,
+    "created": 1757236788.298819,
+    "updated": 1757236791.941443
+  },
+  "vars": {
+    "budget": "20.00",
+    "site": "https://easy-byte.ru/",
+    "usp": "Разработка нейросетей для бизнеса",
+    "geo": "Russia, Moscow",
+    "currency": "RUB",
+    "campaign_name": "Разработка нейросетей для бизнеса — Search"
+  }
+}

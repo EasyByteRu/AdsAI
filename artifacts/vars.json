@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "version": 1,
+    "created": 1755589482.281086,
+    "updated": 1758586168.206322
+  },
+  "vars": {
+    "landing_url": "https://easy-byte.ru/",
+    "budget_daily": 1000.0,
+    "goal": "Трафик",
+    "geo": "Россия",
+    "language": "ru",
+    "ad_headlines": [],
+    "ad_descriptions": [],
+    "ad_keywords": []
+  }
+}

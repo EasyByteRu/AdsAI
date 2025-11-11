@@ -1,0 +1,90 @@
+{"event": "driver_started", "profile_id": "k146rs7c", "ts": 1757210073.34866}
+{"event": "creatives_generated", "keywords": 30, "headlines": 15, "descriptions": 4, "ts": 1757210081.7379808}
+{"event": "exec_step", "idx": 0, "type": "GOTO", "step": {"type": "goto", "url": "https://ads.google.com/aw/campaigns"}, "ts": 1757210081.7398279}
+{"event": "action_start", "action": "goto", "step": {"type": "goto", "url": "https://ads.google.com/aw/campaigns"}, "ts": 1757210081.739916}
+{"event": "action_end", "action": "goto", "ok": true, "attempt": 0, "elapsed_ms": 5025, "ts": 1757210086.76588}
+{"event": "exec_step", "idx": 1, "type": "WAIT_URL", "step": {"type": "wait_url", "pattern": "aw/campaigns", "timeout": 30}, "ts": 1757210086.767009}
+{"event": "action_start", "action": "wait_url", "step": {"type": "wait_url", "pattern": "aw/campaigns", "timeout": 30}, "ts": 1757210086.7673411}
+{"event": "action_end", "action": "wait_url", "ok": true, "attempt": 0, "elapsed_ms": 12, "ts": 1757210086.7794838}
+{"event": "exec_step", "idx": 2, "type": "WAIT_DOM_STABLE", "step": {"type": "wait_dom_stable", "ms": 600, "timeout": 20}, "ts": 1757210086.780094}
+{"event": "action_start", "action": "wait_dom_stable", "step": {"type": "wait_dom_stable", "ms": 600, "timeout": 20}, "ts": 1757210086.780391}
+{"event": "action_end", "action": "wait_dom_stable", "ok": true, "attempt": 0, "elapsed_ms": 1125, "ts": 1757210087.9055092}
+{"event": "exec_step", "idx": 3, "type": "EVALUATE", "step": {"type": "evaluate", "script": "const t=(document.body.innerText||'').match(/\\b(USD|EUR|RUB|UAH|KZT|GBP|TRY|PLN|CZK|GEL|AZN|AMD)\\b/);return t ? t[0] : '';", "var": "account_currency"}, "ts": 1757210087.906274}
+{"event": "action_start", "action": "evaluate", "step": {"type": "evaluate", "script": "const t=(document.body.innerText||'').match(/\\b(USD|EUR|RUB|UAH|KZT|GBP|TRY|PLN|CZK|GEL|AZN|AMD)\\b/);return t ? t[0] : '';", "var": "account_currency"}, "ts": 1757210087.906553}
+{"event": "action_end", "action": "evaluate", "ok": true, "attempt": 0, "elapsed_ms": 11, "ts": 1757210087.91836}
+{"event": "exec_step", "idx": 4, "type": "CHECK", "step": {"type": "check", "selector": "text=\"Campaigns\"", "present": true, "timeout": 5}, "ts": 1757210087.918773}
+{"event": "action_start", "action": "check", "step": {"type": "check", "selector": "text=\"Campaigns\"", "present": true, "timeout": 5}, "ts": 1757210087.9189298}
+{"event": "action_end", "action": "check", "ok": true, "attempt": 0, "elapsed_ms": 4268, "ts": 1757210092.187732}
+{"event": "currency_check", "account_currency": "", "requested": "RUB", "match": false, "ts": 1757210092.187943}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"New campaign\"", "timeout": 10}, "ts": 1757210092.18826}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"New campaign\"", "timeout": 10}, "ts": 1757210092.18834}
+{"event": "action_end", "action": "wait_visible", "ok": true, "attempt": 0, "elapsed_ms": 542, "ts": 1757210092.731196}
+{"event": "exec_step", "idx": 1, "type": "CLICK", "step": {"type": "click", "selector": "text=\"New campaign\"", "retries": 2, "retry_pause_ms": 250}, "ts": 1757210092.731594}
+{"event": "action_start", "action": "click", "step": {"type": "click", "selector": "text=\"New campaign\"", "retries": 2, "retry_pause_ms": 250}, "ts": 1757210092.73187}
+{"event": "action_end", "action": "click", "ok": true, "attempt": 0, "elapsed_ms": 1632, "ts": 1757210094.364896}
+{"event": "exec_step", "idx": 2, "type": "WAIT_DOM_STABLE", "step": {"type": "wait_dom_stable", "ms": 400, "timeout": 10}, "ts": 1757210094.3659189}
+{"event": "action_start", "action": "wait_dom_stable", "step": {"type": "wait_dom_stable", "ms": 400, "timeout": 10}, "ts": 1757210094.36621}
+{"event": "action_end", "action": "wait_dom_stable", "ok": true, "attempt": 0, "elapsed_ms": 413, "ts": 1757210094.7798421}
+{"event": "wizard_bootstrap", "clicked": "text=\"New campaign\"", "ts": 1757210094.780492}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Create a campaign without a goal's guidance\"", "timeout": 8}, "ts": 1757210094.7808452}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Create a campaign without a goal's guidance\"", "timeout": 8}, "ts": 1757210094.781204}
+{"event": "action_end", "action": "wait_visible", "ok": false, "attempt": 0, "elapsed_ms": 8093, "ts": 1757210102.875226}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Create without a goal's guidance\"", "timeout": 8}, "ts": 1757210102.8763719}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Create without a goal's guidance\"", "timeout": 8}, "ts": 1757210102.876699}
+{"event": "action_end", "action": "wait_visible", "ok": false, "attempt": 0, "elapsed_ms": 8706, "ts": 1757210111.58345}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Без цели\"", "timeout": 8}, "ts": 1757210111.584063}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Без цели\"", "timeout": 8}, "ts": 1757210111.584345}
+{"event": "action_end", "action": "wait_visible", "ok": false, "attempt": 0, "elapsed_ms": 8798, "ts": 1757210120.382978}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Создать кампанию без подсказок по целям\"", "timeout": 8}, "ts": 1757210120.3853528}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Создать кампанию без подсказок по целям\"", "timeout": 8}, "ts": 1757210120.386155}
+{"event": "action_end", "action": "wait_visible", "ok": false, "attempt": 0, "elapsed_ms": 8778, "ts": 1757210129.1647842}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Website traffic\"", "timeout": 8}, "ts": 1757210129.165968}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Website traffic\"", "timeout": 8}, "ts": 1757210129.166213}
+{"event": "action_end", "action": "wait_visible", "ok": false, "attempt": 0, "elapsed_ms": 8736, "ts": 1757210137.902663}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Traffic\"", "timeout": 8}, "ts": 1757210137.90339}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Traffic\"", "timeout": 8}, "ts": 1757210137.903549}
+{"event": "action_end", "action": "wait_visible", "ok": true, "attempt": 0, "elapsed_ms": 573, "ts": 1757210138.476686}
+{"event": "exec_step", "idx": 1, "type": "CLICK", "step": {"type": "click", "selector": "text=\"Traffic\"", "retries": 2, "retry_pause_ms": 200}, "ts": 1757210138.476934}
+{"event": "action_start", "action": "click", "step": {"type": "click", "selector": "text=\"Traffic\"", "retries": 2, "retry_pause_ms": 200}, "ts": 1757210138.4772549}
+{"event": "action_end", "action": "click", "ok": true, "attempt": 0, "elapsed_ms": 1862, "ts": 1757210140.3400981}
+{"event": "exec_step", "idx": 2, "type": "WAIT_DOM_STABLE", "step": {"type": "wait_dom_stable", "ms": 300, "timeout": 8}, "ts": 1757210140.340527}
+{"event": "action_start", "action": "wait_dom_stable", "step": {"type": "wait_dom_stable", "ms": 300, "timeout": 8}, "ts": 1757210140.3406699}
+{"event": "action_end", "action": "wait_dom_stable", "ok": true, "attempt": 0, "elapsed_ms": 329, "ts": 1757210140.670321}
+{"event": "wizard_goal", "selected": "text=\"Traffic\"", "ts": 1757210140.670615}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Continue\"", "timeout": 8}, "ts": 1757210140.670781}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Continue\"", "timeout": 8}, "ts": 1757210140.670984}
+{"event": "action_end", "action": "wait_visible", "ok": true, "attempt": 0, "elapsed_ms": 662, "ts": 1757210141.333368}
+{"event": "exec_step", "idx": 1, "type": "CLICK", "step": {"type": "click", "selector": "text=\"Continue\"", "retries": 2, "retry_pause_ms": 200}, "ts": 1757210141.333568}
+{"event": "action_start", "action": "click", "step": {"type": "click", "selector": "text=\"Continue\"", "retries": 2, "retry_pause_ms": 200}, "ts": 1757210141.333627}
+{"event": "action_end", "action": "click", "ok": true, "attempt": 0, "elapsed_ms": 1680, "ts": 1757210143.013885}
+{"event": "exec_step", "idx": 2, "type": "WAIT_DOM_STABLE", "step": {"type": "wait_dom_stable", "ms": 400, "timeout": 10}, "ts": 1757210143.014395}
+{"event": "action_start", "action": "wait_dom_stable", "step": {"type": "wait_dom_stable", "ms": 400, "timeout": 10}, "ts": 1757210143.014635}
+{"event": "action_end", "action": "wait_dom_stable", "ok": true, "attempt": 0, "elapsed_ms": 412, "ts": 1757210143.426662}
+{"event": "wizard_continue_1", "clicked": "text=\"Continue\"", "ts": 1757210143.427053}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Search\"", "timeout": 12}, "ts": 1757210143.427217}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Search\"", "timeout": 12}, "ts": 1757210143.427346}
+{"event": "action_end", "action": "wait_visible", "ok": true, "attempt": 0, "elapsed_ms": 2455, "ts": 1757210145.882729}
+{"event": "exec_step", "idx": 1, "type": "CLICK", "step": {"type": "click", "selector": "text=\"Search\"", "retries": 2, "retry_pause_ms": 250}, "ts": 1757210145.88307}
+{"event": "action_start", "action": "click", "step": {"type": "click", "selector": "text=\"Search\"", "retries": 2, "retry_pause_ms": 250}, "ts": 1757210145.883134}
+{"event": "action_end", "action": "click", "ok": true, "attempt": 0, "elapsed_ms": 4238, "ts": 1757210150.121996}
+{"event": "exec_step", "idx": 2, "type": "WAIT_DOM_STABLE", "step": {"type": "wait_dom_stable", "ms": 300, "timeout": 8}, "ts": 1757210150.122622}
+{"event": "action_start", "action": "wait_dom_stable", "step": {"type": "wait_dom_stable", "ms": 300, "timeout": 8}, "ts": 1757210150.12289}
+{"event": "action_end", "action": "wait_dom_stable", "ok": true, "attempt": 0, "elapsed_ms": 310, "ts": 1757210150.433559}
+{"event": "wizard_type", "selected": "text=\"Search\"", "ts": 1757210150.434013}
+{"event": "exec_step", "idx": 0, "type": "WAIT_VISIBLE", "step": {"type": "wait_visible", "selector": "text=\"Continue\"", "timeout": 10}, "ts": 1757210150.434193}
+{"event": "action_start", "action": "wait_visible", "step": {"type": "wait_visible", "selector": "text=\"Continue\"", "timeout": 10}, "ts": 1757210150.434345}
+{"event": "action_end", "action": "wait_visible", "ok": true, "attempt": 0, "elapsed_ms": 657, "ts": 1757210151.0916622}
+{"event": "exec_step", "idx": 1, "type": "CLICK", "step": {"type": "click", "selector": "text=\"Continue\"", "retries": 2, "retry_pause_ms": 200}, "ts": 1757210151.0918322}
+{"event": "action_start", "action": "click", "step": {"type": "click", "selector": "text=\"Continue\"", "retries": 2, "retry_pause_ms": 200}, "ts": 1757210151.091887}
+{"event": "action_end", "action": "click", "ok": true, "attempt": 0, "elapsed_ms": 1717, "ts": 1757210152.8092349}
+{"event": "exec_step", "idx": 2, "type": "WAIT_DOM_STABLE", "step": {"type": "wait_dom_stable", "ms": 500, "timeout": 12}, "ts": 1757210152.809678}
+{"event": "action_start", "action": "wait_dom_stable", "step": {"type": "wait_dom_stable", "ms": 500, "timeout": 12}, "ts": 1757210152.8098938}
+{"event": "action_end", "action": "wait_dom_stable", "ok": true, "attempt": 0, "elapsed_ms": 513, "ts": 1757210153.322979}
+{"event": "wizard_continue_2", "clicked": "text=\"Continue\"", "ts": 1757210153.323318}
+{"event": "wizard_stage", "stage": 1, "page_heading": "Campaigns", "ts": 1757210153.3454158}
+{"event": "exec_step", "idx": 0, "type": "CLICK", "step": {"type": "click", "selector": "material-fab[aria-label=\"Create campaign\"]"}, "ts": 1757210164.395919}
+{"event": "action_start", "action": "click", "step": {"type": "click", "selector": "material-fab[aria-label=\"Create campaign\"]"}, "ts": 1757210164.3967621}
+{"event": "action_end", "action": "click", "ok": true, "attempt": 0, "elapsed_ms": 1056, "ts": 1757210165.452943}
+{"event": "exec_step", "idx": 1, "type": "CLICK", "step": {"type": "click", "selector": "text=\"Create a campaign without a goal's guidance\""}, "ts": 1757210165.453367}
+{"event": "action_start", "action": "click", "step": {"type": "click", "selector": "text=\"Create a campaign without a goal's guidance\""}, "ts": 1757210165.4535198}
+{"event": "action_end", "action": "click", "ok": false, "attempt": 0, "elapsed_ms": 12003, "ts": 1757210177.457081}

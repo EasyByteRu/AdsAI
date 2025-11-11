@@ -1,0 +1,22 @@
+llm:
+  model: models/gemini-2.0-flash
+  fallback_model: models/gemini-2.0-flash
+  temperature: 0.15
+  retries: 2
+browser:
+  headless_default: false
+  default_wait_sec: 12
+  step_timeout_sec: 35
+  adsp_api_base: http://local.adspower.net:50325
+paths:
+  per_run_subdir: true
+limits:
+  max_steps_per_task: 80
+integrations:
+  tg_bot_token: "7777322606:AAGzg4i2x3Nrf6sWhyPYA2k4_cCgO9IBFTs"
+  tg_bot_username: "HyperAi_AuthBot"
+  tg_admin_chat_id: "6872291277"
+runware:
+  api_key: "2texOEYSQNN0tUFmr2ZaVbX6J62cbquL"
+  model_id: "runware:100@1"
+  base_url: "https://api.runware.ai/v1"

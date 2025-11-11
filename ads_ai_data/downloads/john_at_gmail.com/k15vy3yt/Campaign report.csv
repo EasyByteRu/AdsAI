@@ -1,0 +1,10 @@
+Campaign report
+"September 2, 2025 - September 2, 2025"
+Campaign status,Campaign,Budget,Budget name,Budget type,Status,Status reasons,Optimization score,Campaign type,Clicks,Impr.,CTR,Currency code,Avg. CPC,Cost,Bid strategy type,Conv. rate,Conversions,Cost / conv.
+Enabled,PMax | Agentom 251011054352,1.06, --,Daily,Not eligible,bidding strategy learning; most asset groups disapproved, --,Performance Max,0,0, --,EUR,0,0.00,Maximize Conversions,0.00%,0.00,0.00
+Enabled,PMax | NeuralForge 251013060145,3.19, --,Daily,Eligible,unknown,99.90,Performance Max,0,0, --,EUR,0,0.00,Maximize Conversions,0.00%,0.00,0.00
+Paused,PMax | NeuralForge 251011025729,21.06, --,Daily,Paused,campaign paused; unknown, --,Performance Max,0,0, --,EUR,0,0.00,Maximize Conversions,0.00%,0.00,0.00
+Enabled,PMax | AquaCraft Boats 251013004941,3.19, --,Daily,Eligible (Learning),bidding strategy learning; unknown, --,Performance Max,0,0, --,EUR,0,0.00,Maximize Conversions,0.00%,0.00,0.00
+Total: Campaigns, --, --, --, --, --,, --, --,0,0, --,EUR,0,0.00, --,0.00%,0.00,0.00
+Total: Account,,,,,,,,,0,0, --,EUR,0,0.00,,0.00%,0.00,0.00
+Total: Performance Max,,,,,,,,Performance Max,0,0, --,EUR,0,0.00,,0.00%,0.00,0.00

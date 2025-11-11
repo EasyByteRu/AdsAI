@@ -1,0 +1,11 @@
+{
+  "system": "Определи текущий статус мастера кампании по DOM: идёт процесс / готово к публикации / опубликовано / блокировка.\nЕсли не завершено — предложи до 3-х шагов (next_steps) для продвижения. Ответ ТОЛЬКО JSON-объектом.\n\nTASK:\nМы создаём рекламную кампанию Google Ads: тип=search, цель=Трафик, бюджет/день=1000.0₽, гео=Россия, язык=ru, лендинг=https://easy-byte.ru/. Заполняй только то, что видно на экране мастера.\n\nINPUTS:\n{\"campaign_type\": \"search\", \"goal\": \"Трафик\", \"landing_url\": \"https://easy-byte.ru/\", \"budget_daily\": 1000.0, \"geo\": \"Россия\", \"language\": \"ru\", \"campaign_name\": \"easy-byte.ru · Трафик\", \"ad_headlines\": [], \"ad_descriptions\": [], \"ad_keywords\": []}\n\nKNOWN_VARS:\n{\"campaign_type\": \"search\", \"goal\": \"Трафик\", \"landing_url\": \"https://easy-byte.ru/\", \"budget_daily\": 1000.0, \"geo\": \"Россия\", \"language\": \"ru\", \"campaign_name\": \"easy-byte.ru · Трафик\", \"ad_headlines\": [], \"ad_descriptions\": [], \"ad_keywords\": []}\n\nHISTORY_DONE:\n[]\n\nGUIDE:\n{\"avoid_fields\": [\"search\", \"поиск\", \"найти\", \"find\", \"filter\", \"lookup\", \"global search\", \"quick search\", \"search for\", \"jump to\", \"search campaigns\", \"поиск по\", \"search for a page\", \"search for a page or campaign\"], \"safe_input_guard\": \":not([readonly]):not([disabled]):not([aria-readonly='true']):not([aria-disabled='true'])\"}\n\nVISIBLE_DOM:\n```html\n\n```\n\nRETURN_SCHEMA_EXAMPLE:\n{\"status\": \"ready_to_publish\", \"reason\": \"Виден обзор и активна кнопка 'Создать кампанию'\", \"next_steps\": [{\"type\": \"click\", \"selector\": \"text=\\\"Создать кампанию\\\"\"}, {\"type\": \"wait_url\", \"pattern\": \"/campaigns\", \"regex\": false, \"timeout\": 20}]}",
+  "LLM": [],
+  "meta": {
+    "batch": 1,
+    "when": "before",
+    "tag": "before",
+    "kind": "completion_check",
+    "run_id": "run_14c7d6b8_1756976817"
+  }
+}

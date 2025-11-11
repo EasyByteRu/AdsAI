@@ -1,0 +1,194 @@
+{
+  "fields": [
+    {
+      "id": "f1",
+      "label": "Как называется ваша компания?",
+      "type": "text",
+      "bbox": {
+        "x1": 228,
+        "y1": 295,
+        "x2": 772,
+        "y2": 349
+      },
+      "bbox_norm": {
+        "x1": 0.158,
+        "y1": 0.294,
+        "x2": 0.536,
+        "y2": 0.348
+      },
+      "required": false,
+      "confidence": 0.98,
+      "placeholder": "Укажите название организации (необязательно)",
+      "example": "ООО \"Мой Бизнес\"",
+      "suggested_selectors": [
+        {
+          "selector": "input[aria-label='Название компании']",
+          "reason": "aria-label is a common accessibility attribute",
+          "score": 0.7
+        }
+      ],
+      "notes": null
+    },
+    {
+      "id": "f2",
+      "label": "Ваш сайт",
+      "type": "radio",
+      "bbox": {
+        "x1": 374,
+        "y1": 536,
+        "x2": 450,
+        "y2": 556
+      },
+      "bbox_norm": {
+        "x1": 0.26,
+        "y1": 0.534,
+        "x2": 0.313,
+        "y2": 0.554
+      },
+      "required": true,
+      "confidence": 0.97,
+      "placeholder": null,
+      "example": null,
+      "suggested_selectors": [],
+      "notes": "This radio button is part of a group with the label \"Куда должны попадать пользователи, которые нажали на ваше объявление?\""
+    },
+    {
+      "id": "f3",
+      "label": "Укажите URL веб-страницы",
+      "type": "text",
+      "bbox": {
+        "x1": 374,
+        "y1": 637,
+        "x2": 772,
+        "y2": 695
+      },
+      "bbox_norm": {
+        "x1": 0.26,
+        "y1": 0.634,
+        "x2": 0.536,
+        "y2": 0.692
+      },
+      "required": true,
+      "confidence": 0.98,
+      "placeholder": "Укажите URL веб-страницы*",
+      "example": "https://www.example.com",
+      "suggested_selectors": [
+        {
+          "selector": "input[placeholder*='URL']",
+          "reason": "placeholder attribute",
+          "score": 0.9
+        }
+      ],
+      "notes": "This input is associated with the 'Ваш сайт' radio button."
+    },
+    {
+      "id": "f4",
+      "label": "Номер телефона вашей компании.",
+      "type": "radio",
+      "bbox": {
+        "x1": 374,
+        "y1": 739,
+        "x2": 629,
+        "y2": 759
+      },
+      "bbox_norm": {
+        "x1": 0.26,
+        "y1": 0.736,
+        "x2": 0.437,
+        "y2": 0.756
+      },
+      "required": true,
+      "confidence": 0.97,
+      "placeholder": null,
+      "example": null,
+      "suggested_selectors": [],
+      "notes": "This radio button is part of a group with the label \"Куда должны попадать пользователи, которые нажали на ваше объявление?\""
+    },
+    {
+      "id": "f5",
+      "label": "Страница скачивания приложения",
+      "type": "radio",
+      "bbox": {
+        "x1": 374,
+        "y1": 777,
+        "x2": 633,
+        "y2": 797
+      },
+      "bbox_norm": {
+        "x1": 0.26,
+        "y1": 0.774,
+        "x2": 0.44,
+        "y2": 0.794
+      },
+      "required": true,
+      "confidence": 0.97,
+      "placeholder": null,
+      "example": null,
+      "suggested_selectors": [],
+      "notes": "This radio button is part of a group with the label \"Куда должны попадать пользователи, которые нажали на ваше объявление?\""
+    },
+    {
+      "id": "f6",
+      "label": "Далее",
+      "type": "button",
+      "bbox": {
+        "x1": 877,
+        "y1": 876,
+        "x2": 955,
+        "y2": 912
+      },
+      "bbox_norm": {
+        "x1": 0.609,
+        "y1": 0.873,
+        "x2": 0.663,
+        "y2": 0.908
+      },
+      "required": false,
+      "confidence": 0.99,
+      "placeholder": null,
+      "example": "Далее",
+      "suggested_selectors": [
+        {
+          "selector": "button span:contains('Далее')",
+          "reason": "text content",
+          "score": 0.95
+        }
+      ],
+      "notes": null
+    },
+    {
+      "id": "f7",
+      "label": "Справочные статьи",
+      "type": "link",
+      "bbox": {
+        "x1": 758,
+        "y1": 951,
+        "x2": 878,
+        "y2": 969
+      },
+      "bbox_norm": {
+        "x1": 0.526,
+        "y1": 0.947,
+        "x2": 0.61,
+        "y2": 0.965
+      },
+      "required": false,
+      "confidence": 0.96,
+      "placeholder": null,
+      "example": "Справочные статьи",
+      "suggested_selectors": [
+        {
+          "selector": "a:contains('Справочные статьи')",
+          "reason": "text content",
+          "score": 0.95
+        }
+      ],
+      "notes": null
+    }
+  ],
+  "meta": {
+    "image_width": 1440,
+    "image_height": 1004,
+    "notes": null
+  }
+}

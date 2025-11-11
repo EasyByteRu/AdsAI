@@ -457,13 +457,40 @@ class UploadDialog:
                 ];
                 let input=null;
                 for(const s of sels){ try{ const v=root.querySelector(s); if(v){ input=v; break; } }catch(_){ } }
-                if(!input){ const pane=root.closest?.('.cdk-overlay-pane')||document;
-                  for(const s of sels){ const v=pane.querySelector(s); if(v){ input=v; break; } } }
+
+                // Если не нашли внутри root, ищем в pane
+                if(!input){
+                  const pane=root.closest?.('.cdk-overlay-pane')||document;
+                  for(const s of sels){ const v=pane.querySelector(s); if(v){ input=v; break; } }
+                }
+
+                // Если все еще не нашли, ищем input как sibling к drop-zone или upload-tab
+                if(!input){
+                  const dropZone=root.querySelector('drop-zone, .drop-zone, .upload-tab, assets-upload-tab');
+                  if(dropZone){
+                    // Ищем среди siblings
+                    const parent=dropZone.parentElement;
+                    if(parent){
+                      const siblings=parent.querySelectorAll('input[type="file"]');
+                      for(const sib of siblings){ if(sib){ input=sib; break; } }
+                    }
+                  }
+                }
+
                 if(!input) return null;
 
                 // Прокручиваем drop-zone в видимую область перед активацией
-                const dropZone=input.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader');
-                try{ (dropZone||input).scrollIntoView({block:'center',inline:'center'}); }catch(_){ }
+                const dropZone=input.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader,.upload-tab');
+                if(!dropZone){
+                  // Если input не внутри drop-zone, ищем drop-zone как sibling
+                  const parent=input.parentElement;
+                  if(parent){
+                    const dz=parent.querySelector('drop-zone, .drop-zone, .upload-tab, assets-upload-tab');
+                    if(dz){ try{ dz.scrollIntoView({block:'center',inline:'center'}); }catch(_){ } }
+                  }
+                }else{
+                  try{ dropZone.scrollIntoView({block:'center',inline:'center'}); }catch(_){ }
+                }
 
                 // Делаем input видимым с большими размерами для лучшей совместимости
                 const st=input.style;
@@ -495,9 +522,33 @@ class UploadDialog:
                 const dlg=arguments[0]; const keys=new Set((arguments[1]||[]).map(s=>String(s||'').toLowerCase()));
                 const isVis=e=>{ if(!e) return false; const cs=getComputedStyle(e),r=e.getBoundingClientRect();
                   if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity||'1')<.2) return false; return r.width>10&&r.height>10&&r.right>0&&r.bottom>0; };
-                const btns=[...dlg.querySelectorAll('button,[role=button],material-button,a[role=button]')].filter(isVis);
-                return btns.find(b=>{const t=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')).toLowerCase();
-                  return [...keys].some(k=>t.includes(k)); }) || null;
+
+                // Попытка 1: поиск по классу .upload-button
+                let found = dlg.querySelector('.upload-button, material-button.upload-button');
+                if(found && isVis(found)) return found;
+
+                // Попытка 2: поиск среди button, material-button, a (включая обычные <a> без role)
+                const btns=[...dlg.querySelectorAll('button,[role=button],material-button,a[role=button],a')].filter(isVis);
+                found = btns.find(b=>{
+                  const contentDiv=b.querySelector('.content, div.content');
+                  const contentText=contentDiv?(contentDiv.innerText||contentDiv.textContent||'').toLowerCase():'';
+                  const fullText=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')+' '+contentText).toLowerCase();
+                  return [...keys].some(k=>fullText.includes(k));
+                });
+                if(found) return found;
+
+                // Попытка 3: поиск родительского <a> если кнопка внутри него
+                const allMaterialBtns=[...dlg.querySelectorAll('material-button')].filter(isVis);
+                for(const mb of allMaterialBtns){
+                  const contentDiv=mb.querySelector('.content, div.content');
+                  const contentText=contentDiv?(contentDiv.innerText||contentDiv.textContent||'').toLowerCase():'';
+                  if([...keys].some(k=>contentText.includes(k))){
+                    const parent=mb.closest('a');
+                    return parent && isVis(parent) ? parent : mb;
+                  }
+                }
+
+                return null;
                 """,
                 self.root, list(CHOOSE_FILES_TEXT_MATCHES),
             )
@@ -507,7 +558,8 @@ class UploadDialog:
             ok = _mouse_click(self.drv, btn)
             logger.info("step12: [%s] клик по 'Upload from computer' -> %s", self.kind, ok)
             return ok
-        except Exception:
+        except Exception as exc:
+            logger.debug("step12: [%s] _click_upload_from_computer ошибка: %s", self.kind, exc)
             return False
 
     def locate_input(self, *, try_click_upload_button: bool = True) -> Optional[WebElement]:
@@ -991,8 +1043,17 @@ class Uploader:
                 const fresh=cs[cs.length-1];
 
                 // Прокручиваем в видимую область
-                const dropZone=fresh.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader');
-                try{ (dropZone||fresh).scrollIntoView({block:'center',inline:'center'}); }catch(_){ }
+                const dropZone=fresh.closest('drop-zone,.drop-zone,.drop-zone-container,.drop-body,assets-upload-tab,.asset-uploader,.upload-tab');
+                if(!dropZone){
+                  // Если input не внутри drop-zone, ищем drop-zone как sibling
+                  const parent=fresh.parentElement;
+                  if(parent){
+                    const dz=parent.querySelector('drop-zone, .drop-zone, .upload-tab, assets-upload-tab');
+                    if(dz){ try{ dz.scrollIntoView({block:'center',inline:'center'}); }catch(_){ } }
+                  }
+                }else{
+                  try{ dropZone.scrollIntoView({block:'center',inline:'center'}); }catch(_){ }
+                }
 
                 // Делаем видимым с большими размерами
                 const st=fresh.style;

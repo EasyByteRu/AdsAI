@@ -120,7 +120,12 @@ CONFIRM_BUTTON_PREFER_SELECTORS: Sequence[str] = (
     '[data-test-id="confirm-button"]',
     'material-button[data-test-id="confirm-button"]',
     '.confirm-button-group [data-test-id="confirm-button"]',
+    '.confirm-button-group material-button',
+    'material-button.confirm-button',
     '.footer [data-test-id="confirm-button"]',
+    '.footer material-button.confirm-button',
+    '[aria-label*="confirm the action"]',
+    'material-button[aria-label*="confirm"]',
 )
 
 CHOOSE_FILES_TEXT_MATCHES: Sequence[str] = (
@@ -614,7 +619,7 @@ class UploadDialog:
                 """
                 const pane=arguments[0]?.closest?.('.cdk-overlay-pane')||arguments[0]||document;
                 const sels=arguments[1]||[];
-                const isVis=el=>{ if(!el) return false; const cs=getComputedStyle(el),r=e.getBoundingClientRect?.()||{width:0,height:0,bottom:0,right:0};
+                const isVis=el=>{ if(!el) return false; const cs=getComputedStyle(el),r=el.getBoundingClientRect?.()||{width:0,height:0,bottom:0,right:0};
                   if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity||'1')<.2) return false; return r.width>10&&r.height>10&&r.bottom>0&&r.right>0; };
                 for(const s of sels){ const found=pane.querySelectorAll(s); for(const b of found){ if(isVis(b)) return b; } }
                 if(pane!==document){ for(const s of sels){ const found=document.querySelectorAll(s); for(const b of found){ if(isVis(b)) return b; } } }
@@ -631,11 +636,38 @@ class UploadDialog:
                     const pane=arguments[0]?.closest?.('.cdk-overlay-pane')||arguments[0]||document;
                     const isVis=el=>{ if(!el) return false; const cs=getComputedStyle(el),r=el.getBoundingClientRect();
                       if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity||'1')<.2) return false; return r.width>10&&r.height>10&&r.bottom>0&&r.right>0; };
-                    const btns=[...pane.querySelectorAll('button,[role=button],material-button,.mdc-button')].filter(isVis);
-                    return btns.find(b=>{const t=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')).toLowerCase();
+
+                    // Попытка 1: поиск по всему документу с приоритетом на pane
+                    let btns=[...pane.querySelectorAll('button,[role=button],material-button,.mdc-button')].filter(isVis);
+                    let found = btns.find(b=>{
+                      const t=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')).toLowerCase();
                       const dis=(b.getAttribute('aria-disabled')||'')==='true'||b.hasAttribute('disabled')||b.classList.contains('is-disabled');
                       return !dis && /(save|select|done|add|continue|apply|применить|продолжить|сохран|готово|выбрать|добавить)/.test(t);
-                    })||null;
+                    });
+
+                    // Попытка 2: если не нашли в pane, ищем по всему документу
+                    if(!found && pane!==document){
+                      btns=[...document.querySelectorAll('button,[role=button],material-button,.mdc-button')].filter(isVis);
+                      found = btns.find(b=>{
+                        const t=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')).toLowerCase();
+                        const dis=(b.getAttribute('aria-disabled')||'')==='true'||b.hasAttribute('disabled')||b.classList.contains('is-disabled');
+                        return !dis && /(save|select|done|add|continue|apply|применить|продолжить|сохран|готово|выбрать|добавить)/.test(t);
+                      });
+                    }
+
+                    // Попытка 3: более агрессивный поиск - ищем по содержимому класса content
+                    if(!found){
+                      const allBtns=[...document.querySelectorAll('material-button, button, [role=button]')].filter(isVis);
+                      found = allBtns.find(b=>{
+                        const contentDiv=b.querySelector('.content, div.content');
+                        const contentText=contentDiv?(contentDiv.innerText||contentDiv.textContent||'').toLowerCase():'';
+                        const fullText=((b.getAttribute('aria-label')||'')+' '+(b.innerText||b.textContent||'')+' '+contentText).toLowerCase();
+                        const dis=(b.getAttribute('aria-disabled')||'')==='true'||b.hasAttribute('disabled')||b.classList.contains('is-disabled');
+                        return !dis && /(save|select|done|apply|сохран|готово|выбрать)/.test(fullText);
+                      });
+                    }
+
+                    return found||null;
                     """,
                     self.root,
                 )

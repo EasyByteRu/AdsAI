@@ -4,16 +4,24 @@ import os
 import json
 import requests
 
-API_KEY = "AIzaSyBsZ4-PCrRV2lQc0nGKkHerBxNnf1wiP8c"   # <-- ключ сюда
-MODEL   = "gemini-2.0-flash"                  # можно поменять на свою модель
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")  # можно поменять на свою модель
 
-BASE_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
-HEADERS  = {"Content-Type": "application/json; charset=utf-8"}
+BASE_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+HEADERS = {"Content-Type": "application/json; charset=utf-8"}
 
 class QuotaDisabled(Exception): pass
+class MissingApiKey(Exception): pass
+
+def _get_api_key() -> str:
+    key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
+    if not key:
+        raise MissingApiKey("Укажи переменную окружения GEMINI_API_KEY (или GOOGLE_API_KEY).")
+    return key
 
 def _post(payload: dict) -> dict:
-    r = requests.post(BASE_URL, headers=HEADERS, data=json.dumps(payload), timeout=60)
+    api_key = _get_api_key()
+    url = BASE_URL_TEMPLATE.format(model=MODEL, api_key=api_key)
+    r = requests.post(url, headers=HEADERS, data=json.dumps(payload), timeout=60)
     if r.status_code == 429:
         # различаем «rate limit» и «limit: 0», если прилетит текст ошибки
         msg = r.text
@@ -73,9 +81,6 @@ def ask_json(prompt: str, max_tokens: int = 256) -> dict:
         raise
 
 if __name__ == "__main__":
-    if not API_KEY or API_KEY.startswith("ВСТАВЬ_"):
-        raise SystemExit("Вставь нормальный GEMINI API KEY в API_KEY")
-
     try:
         print("=== TEXT ===")
         print(ask_text("Ответь ровно словом: Готово."))
@@ -83,6 +88,8 @@ if __name__ == "__main__":
         print("\n=== JSON ===")
         result = ask_json('Сформируй {"items":["слоган1","слоган2","слоган3"]} для бренда EasyByte. Коротко, ≤30 символов.')
         print(json.dumps(result, ensure_ascii=False, indent=2))
+    except MissingApiKey as e:
+        print("LLM OFF:", e)
     except QuotaDisabled as q:
         print("LLM OFF:", q)
     except requests.HTTPError as e:

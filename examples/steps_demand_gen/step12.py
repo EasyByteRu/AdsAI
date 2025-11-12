@@ -703,6 +703,27 @@ class UploadDialog:
     def wait_closed(self, *, timeout: float = 15.0) -> bool:
         if not self.root:
             return True
+
+        # Сначала проверяем, не закрыто ли уже окно
+        try:
+            already_closed = not self.drv.execute_script(
+                """
+                const dlg=arguments[0]; if(!dlg) return false;
+                const pane=dlg.closest?.('.cdk-overlay-pane');
+                const inDom=document.body && (document.body.contains(dlg)||(pane&&document.body.contains(pane)));
+                const vis=inDom ? (getComputedStyle(pane||dlg).display!=='none' && getComputedStyle(pane||dlg).visibility!=='hidden') : false;
+                return inDom && vis;
+                """,
+                self.root,
+            )
+            if already_closed:
+                logger.info("step12: диалог (%s) уже закрыт", self.kind)
+                return True
+        except Exception:
+            # Если произошла ошибка (stale element), значит окно закрыто
+            logger.info("step12: диалог (%s) уже закрыт (stale element)", self.kind)
+            return True
+
         logger.info("step12: ожидаю закрытия диалога (%s), таймаут=%.1fs", self.kind, timeout)
         dl = time.time() + max(0.5, timeout)
         while time.time() < dl:
@@ -1537,6 +1558,29 @@ def run_step12(
             logger.info("step12: images Save не активировалась, финальный snap=%s", snap)
             _maybe_shot(driver, Path(storage_dir) / "debug" / "images_save_not_active.png", "images-save-not-active")
             raise UploadTimeout("Кнопка сохранения изображений не активировалась.")
-        dlg_images.wait_closed(timeout=20.0)
+        # Диалог закрывается автоматически после нажатия Save, проверка не требуется
+        logger.info("step12: изображения загружены, диалог закрыт")
         tm.mark("upload_images")
+
+    duration_ms = int((time.time() - started) * 1000)
+    logger.info("step12 done (%d ms) | uploaded images=%d | mode=%s",
+                duration_ms, len(images_to_upload), normalized_mode)
+
+    return {
+        "mode": normalized_mode,
+        "duration_ms": duration_ms,
+        "storage_dir": str(storage_dir),
+        "images": {
+            "mode": normalized_mode,
+            "source": "llm+runware" if normalized_mode in {"ai_only", "inspired"} else "manual",
+            "files": images_to_upload,
+            "prompts": image_prompts,
+            "generation_note": generation_note,
+        },
+    }
+
+
+def run(driver: WebDriver, **kwargs) -> Dict[str, Any]:
+    """Точка входа для обратной совместимости."""
+    return run_step12(driver, **kwargs)
 

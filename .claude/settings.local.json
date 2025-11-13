@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m py_compile:*)"
+      "Bash(python -c \"\nimport sys\nimport importlib.util\n\n# Загружаем step13\nspec = importlib.util.spec_from_file_location(''step13'', ''examples/steps_demand_gen/step13.py'')\nstep13 = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(step13)\n\n# Проверяем сигнатуру\nimport inspect\nsig = inspect.signature(step13.run_step13)\nprint(''Параметры run_step13:'')\nfor name, param in sig.parameters.items():\n    default = '' (обязательный)'' if param.default == inspect.Parameter.empty else f'' = {param.default}''\n    print(f''  - {name}: {param.annotation}{default}'')\n\")"
     ],
     "deny": [],
     "ask": []

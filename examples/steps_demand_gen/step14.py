@@ -2,7 +2,13 @@
 """
 examples/steps_demand_gen/step14.py
 
-Шаг 14 (Demand Gen) — заполнение текстовых креативов (Headlines и Descriptions).
+Шаг 14 (Demand Gen) — заполнение текстовых креативов.
+
+Функциональность:
+  • Headlines — заголовки кампании
+  • Descriptions — описания кампании
+  • Call to Action — язык и текст кнопки
+  • Business Name — название бизнеса
 
 Контракт:
 - run_step14(driver, *, mode, seed_assets, provided_assets, business_name, usp, site_url, ...)
@@ -16,6 +22,12 @@ examples/steps_demand_gen/step14.py
 Лимиты:
   • Headline: до 5 штук, максимум 40 символов
   • Description: до 5 штук, максимум 90 символов
+  • Business Name: максимум 25 символов
+
+Call to Action:
+  • Автоматическое определение языка на основе контента (кириллица → Russian, и т.д.)
+  • Выбор подходящего текста CTA через LLM из списка доступных опций
+  • Поддержка 45+ языков
 """
 
 from __future__ import annotations
@@ -71,6 +83,28 @@ DESCRIPTION_MAX_LENGTH = 90
 # Селекторы
 HEADLINES_EDITOR_SELECTOR = 'multi-asset-editor[debugid="headlines"]'
 DESCRIPTIONS_EDITOR_SELECTOR = 'multi-asset-editor[debugid="descriptions"]'
+
+# Call to Action константы
+BUSINESS_NAME_MAX_LENGTH = 25
+
+# Доступные языки для Call to Action
+CTA_LANGUAGES = [
+    "Arabic", "Bulgarian", "Catalan", "Chinese (Hong Kong)", "Chinese (Simplified)",
+    "Chinese (Traditional)", "Croatian", "Czech", "Danish", "Dutch", "English",
+    "English (Australia)", "English (United Kingdom)", "English (United States)",
+    "Estonian", "Filipino", "Finnish", "French", "German", "Greek", "Hebrew",
+    "Hindi", "Hungarian", "Indonesian", "Italian", "Japanese", "Korean", "Latvian",
+    "Lithuanian", "Malay", "Norwegian", "Polish", "Portuguese (Brazil)",
+    "Portuguese (Portugal)", "Romanian", "Russian", "Serbian", "Slovak", "Slovenian",
+    "Spanish (Latin America)", "Spanish (Spain)", "Swedish", "Thai", "Turkish",
+    "Ukrainian", "Vietnamese"
+]
+
+# Доступные тексты Call to Action
+CTA_TEXTS = [
+    "Apply now", "Book now", "Contact us", "Download", "Learn more",
+    "Visit site", "Shop now", "Sign up", "Get quote", "Subscribe", "See more"
+]
 
 
 # --------------------------------------------------------------------------------------
@@ -304,18 +338,75 @@ def _llm_generate_headlines(
     business_name: Optional[str],
     usp: Optional[str],
     site_url: Optional[str],
+    languages: Optional[List[str]] = None,
     seed_examples: Optional[List[str]] = None,
 ) -> List[str]:
     """Генерация заголовков через LLM."""
     if STEP14_DISABLE_LLM or GeminiClient is None:
         logger.warning("step14: LLM отключена — fallback заголовки")
         return _fallback_headlines(business_name=business_name, usp=usp, count=count)
-    
+
+    # Определяем язык для генерации
+    target_language = "English"
+    if languages:
+        first_lang = next((lang for lang in languages if lang and lang.strip()), None)
+        if first_lang:
+            # Преобразуем код или название в читаемый язык для промпта
+            lang_lower = first_lang.strip().lower()
+            if lang_lower in ["ru", "russian"]:
+                target_language = "Russian"
+            elif lang_lower in ["de", "german"]:
+                target_language = "German"
+            elif lang_lower in ["fr", "french"]:
+                target_language = "French"
+            elif lang_lower in ["es", "spanish"]:
+                target_language = "Spanish"
+            elif lang_lower in ["it", "italian"]:
+                target_language = "Italian"
+            elif lang_lower in ["pt", "portuguese"]:
+                target_language = "Portuguese"
+            elif lang_lower in ["pl", "polish"]:
+                target_language = "Polish"
+            elif lang_lower in ["tr", "turkish"]:
+                target_language = "Turkish"
+            elif lang_lower in ["uk", "ua", "ukrainian"]:
+                target_language = "Ukrainian"
+            elif lang_lower in ["zh", "chinese"]:
+                target_language = "Chinese"
+            elif lang_lower in ["ja", "japanese"]:
+                target_language = "Japanese"
+            elif lang_lower in ["ko", "korean"]:
+                target_language = "Korean"
+            elif lang_lower in ["ar", "arabic"]:
+                target_language = "Arabic"
+            elif lang_lower in ["hi", "hindi"]:
+                target_language = "Hindi"
+            elif lang_lower in ["th", "thai"]:
+                target_language = "Thai"
+            elif lang_lower in ["vi", "vietnamese"]:
+                target_language = "Vietnamese"
+            elif lang_lower in ["id", "indonesian"]:
+                target_language = "Indonesian"
+            elif lang_lower in ["nl", "dutch"]:
+                target_language = "Dutch"
+            elif lang_lower in ["sv", "swedish"]:
+                target_language = "Swedish"
+            elif lang_lower in ["no", "norwegian"]:
+                target_language = "Norwegian"
+            elif lang_lower in ["da", "danish"]:
+                target_language = "Danish"
+            elif lang_lower in ["fi", "finnish"]:
+                target_language = "Finnish"
+            # Добавляем другие языки по необходимости
+            logger.info("step14: язык генерации заголовков: %s (из %s)", target_language, first_lang)
+    else:
+        logger.info("step14: язык не передан, используем English для заголовков")
+
     instructions = (
         f"Generate {count} catchy headlines for Google Ads Demand Gen campaign. "
         f"Each headline MUST be ≤{HEADLINE_MAX_LENGTH} characters. "
         "Return ONLY JSON {\"headlines\":[\"...\", ...]}. "
-        "No quotes inside headlines. English only."
+        f"No quotes inside headlines. Generate in {target_language} language."
     )
     
     context_parts = []
@@ -362,18 +453,75 @@ def _llm_generate_descriptions(
     business_name: Optional[str],
     usp: Optional[str],
     site_url: Optional[str],
+    languages: Optional[List[str]] = None,
     seed_examples: Optional[List[str]] = None,
 ) -> List[str]:
     """Генерация описаний через LLM."""
     if STEP14_DISABLE_LLM or GeminiClient is None:
         logger.warning("step14: LLM отключена — fallback описания")
         return _fallback_descriptions(business_name=business_name, usp=usp, count=count)
-    
+
+    # Определяем язык для генерации
+    target_language = "English"
+    if languages:
+        first_lang = next((lang for lang in languages if lang and lang.strip()), None)
+        if first_lang:
+            # Преобразуем код или название в читаемый язык для промпта
+            lang_lower = first_lang.strip().lower()
+            if lang_lower in ["ru", "russian"]:
+                target_language = "Russian"
+            elif lang_lower in ["de", "german"]:
+                target_language = "German"
+            elif lang_lower in ["fr", "french"]:
+                target_language = "French"
+            elif lang_lower in ["es", "spanish"]:
+                target_language = "Spanish"
+            elif lang_lower in ["it", "italian"]:
+                target_language = "Italian"
+            elif lang_lower in ["pt", "portuguese"]:
+                target_language = "Portuguese"
+            elif lang_lower in ["pl", "polish"]:
+                target_language = "Polish"
+            elif lang_lower in ["tr", "turkish"]:
+                target_language = "Turkish"
+            elif lang_lower in ["uk", "ua", "ukrainian"]:
+                target_language = "Ukrainian"
+            elif lang_lower in ["zh", "chinese"]:
+                target_language = "Chinese"
+            elif lang_lower in ["ja", "japanese"]:
+                target_language = "Japanese"
+            elif lang_lower in ["ko", "korean"]:
+                target_language = "Korean"
+            elif lang_lower in ["ar", "arabic"]:
+                target_language = "Arabic"
+            elif lang_lower in ["hi", "hindi"]:
+                target_language = "Hindi"
+            elif lang_lower in ["th", "thai"]:
+                target_language = "Thai"
+            elif lang_lower in ["vi", "vietnamese"]:
+                target_language = "Vietnamese"
+            elif lang_lower in ["id", "indonesian"]:
+                target_language = "Indonesian"
+            elif lang_lower in ["nl", "dutch"]:
+                target_language = "Dutch"
+            elif lang_lower in ["sv", "swedish"]:
+                target_language = "Swedish"
+            elif lang_lower in ["no", "norwegian"]:
+                target_language = "Norwegian"
+            elif lang_lower in ["da", "danish"]:
+                target_language = "Danish"
+            elif lang_lower in ["fi", "finnish"]:
+                target_language = "Finnish"
+            # Добавляем другие языки по необходимости
+            logger.info("step14: язык генерации описаний: %s (из %s)", target_language, first_lang)
+    else:
+        logger.info("step14: язык не передан, используем English для описаний")
+
     instructions = (
         f"Generate {count} compelling descriptions for Google Ads Demand Gen campaign. "
         f"Each description MUST be ≤{DESCRIPTION_MAX_LENGTH} characters. "
         "Return ONLY JSON {\"descriptions\":[\"...\", ...]}. "
-        "No quotes inside descriptions. English only."
+        f"No quotes inside descriptions. Generate in {target_language} language."
     )
     
     context_parts = []
@@ -412,6 +560,498 @@ def _llm_generate_descriptions(
     except Exception as exc:
         logger.warning("step14: LLM генерация описаний не удалась: %s", exc)
         return _fallback_descriptions(business_name=business_name, usp=usp, count=count)
+
+
+# --------------------------------------------------------------------------------------
+#                         ОПРЕДЕЛЕНИЕ ЯЗЫКА И CALL TO ACTION
+# --------------------------------------------------------------------------------------
+
+# Маппинг языковых кодов и названий на полные названия для CTA
+LANG_CODE_TO_CTA_LANGUAGE = {
+    # Language codes (2-3 chars)
+    "en": "English (United States)",
+    "ru": "Russian",
+    "de": "German",
+    "fr": "French",
+    "es": "Spanish (Spain)",
+    "pt": "Portuguese (Portugal)",
+    "it": "Italian",
+    "pl": "Polish",
+    "tr": "Turkish",
+    "uk": "Ukrainian",
+    "ua": "Ukrainian",
+    "zh": "Chinese (Simplified)",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "th": "Thai",
+    "vi": "Vietnamese",
+    "ar": "Arabic",
+    "hi": "Hindi",
+    "id": "Indonesian",
+    "nl": "Dutch",
+    "sv": "Swedish",
+    "no": "Norwegian",
+    "da": "Danish",
+    "fi": "Finnish",
+    "cs": "Czech",
+    "sk": "Slovak",
+    "hu": "Hungarian",
+    "ro": "Romanian",
+    "bg": "Bulgarian",
+    "hr": "Croatian",
+    "sr": "Serbian",
+    "sl": "Slovenian",
+    "et": "Estonian",
+    "lv": "Latvian",
+    "lt": "Lithuanian",
+    "el": "Greek",
+    "he": "Hebrew",
+    "ca": "Catalan",
+    "ms": "Malay",
+    "fil": "Filipino",
+    # Simple language names (for fallback)
+    "english": "English (United States)",
+    "russian": "Russian",
+    "german": "German",
+    "french": "French",
+    "spanish": "Spanish (Spain)",
+    "portuguese": "Portuguese (Portugal)",
+    "italian": "Italian",
+    "polish": "Polish",
+    "turkish": "Turkish",
+    "ukrainian": "Ukrainian",
+    "chinese": "Chinese (Simplified)",
+    "japanese": "Japanese",
+    "korean": "Korean",
+    "thai": "Thai",
+    "vietnamese": "Vietnamese",
+    "arabic": "Arabic",
+    "hindi": "Hindi",
+    "indonesian": "Indonesian",
+    "dutch": "Dutch",
+    "swedish": "Swedish",
+    "norwegian": "Norwegian",
+    "danish": "Danish",
+    "finnish": "Finnish",
+    "czech": "Czech",
+    "slovak": "Slovak",
+    "hungarian": "Hungarian",
+    "romanian": "Romanian",
+    "bulgarian": "Bulgarian",
+    "croatian": "Croatian",
+    "serbian": "Serbian",
+    "slovenian": "Slovenian",
+    "estonian": "Estonian",
+    "latvian": "Latvian",
+    "lithuanian": "Lithuanian",
+    "greek": "Greek",
+    "hebrew": "Hebrew",
+    "catalan": "Catalan",
+    "malay": "Malay",
+    "filipino": "Filipino",
+}
+
+
+def _map_language_to_cta(lang: str) -> str:
+    """
+    Преобразовать язык (код или название) в полное название для CTA dropdown.
+    Например: "en" → "English (United States)", "ru" → "Russian"
+    """
+    if not lang:
+        return "English (United States)"
+
+    # Проверяем точное совпадение (если уже полное название)
+    lang_normalized = lang.strip()
+    if lang_normalized in CTA_LANGUAGES:
+        return lang_normalized
+
+    # Проверяем по коду или простому названию
+    lang_lower = lang_normalized.lower()
+    if lang_lower in LANG_CODE_TO_CTA_LANGUAGE:
+        return LANG_CODE_TO_CTA_LANGUAGE[lang_lower]
+
+    # Проверяем, начинается ли название из CTA_LANGUAGES с этого языка
+    # Например: "English" → "English (United States)"
+    for cta_lang in CTA_LANGUAGES:
+        if cta_lang.lower().startswith(lang_lower):
+            return cta_lang
+
+    return "English (United States)"
+
+
+def _detect_language_from_context(
+    *,
+    languages: Optional[List[str]] = None,
+    business_name: Optional[str] = None,
+    usp: Optional[str] = None,
+    headlines: Optional[List[str]] = None,
+    descriptions: Optional[List[str]] = None,
+) -> str:
+    """
+    Определить язык для CTA на основе переданных языков из create_companies.py.
+    Если languages не передан, пытаемся определить по контексту (fallback).
+    Возвращает полное название языка из CTA_LANGUAGES.
+    """
+    # Приоритет 1: используем переданные языки из create_companies.py
+    if languages:
+        first_lang = next((lang for lang in languages if lang and lang.strip()), None)
+        if first_lang:
+            cta_language = _map_language_to_cta(first_lang)
+            logger.info("step14: используем язык из параметров: %s → %s", first_lang, cta_language)
+            return cta_language
+
+    # Приоритет 2 (fallback): определяем по контексту текста (упрощенная эвристика)
+    all_text = " ".join(filter(None, [
+        business_name or "",
+        usp or "",
+        " ".join(headlines or []),
+        " ".join(descriptions or []),
+    ])).strip()
+
+    if all_text:
+        # Простая эвристика по символам (только основные языки)
+        cyrillic_chars = sum(1 for c in all_text if '\u0400' <= c <= '\u04FF')
+        if cyrillic_chars > len(all_text) * 0.1:
+            logger.info("step14: обнаружена кириллица в тексте, используем Russian")
+            return "Russian"
+
+        chinese_chars = sum(1 for c in all_text if '\u4E00' <= c <= '\u9FFF')
+        if chinese_chars > 0:
+            logger.info("step14: обнаружены китайские символы в тексте, используем Chinese (Simplified)")
+            return "Chinese (Simplified)"
+
+        japanese_chars = sum(1 for c in all_text if '\u3040' <= c <= '\u309F' or '\u30A0' <= c <= '\u30FF')
+        if japanese_chars > 0:
+            logger.info("step14: обнаружены японские символы в тексте, используем Japanese")
+            return "Japanese"
+
+        arabic_chars = sum(1 for c in all_text if '\u0600' <= c <= '\u06FF')
+        if arabic_chars > len(all_text) * 0.1:
+            logger.info("step14: обнаружены арабские символы в тексте, используем Arabic")
+            return "Arabic"
+
+    # По умолчанию English (United States)
+    logger.info("step14: не удалось определить язык, используем English (United States)")
+    return "English (United States)"
+
+
+def _llm_select_cta_text(
+    *,
+    business_name: Optional[str] = None,
+    usp: Optional[str] = None,
+    site_url: Optional[str] = None,
+    headlines: Optional[List[str]] = None,
+) -> str:
+    """
+    Выбрать подходящий текст Call to Action через LLM.
+    """
+    if STEP14_DISABLE_LLM or GeminiClient is None:
+        logger.warning("step14: LLM отключена — используем Learn more по умолчанию")
+        return "Learn more"
+
+    instructions = (
+        f"Select the MOST appropriate Call-to-Action text from this list: {', '.join(CTA_TEXTS)}. "
+        "Return ONLY JSON {\"cta_text\": \"...\"}. "
+        "Choose based on the business context and campaign goal."
+    )
+
+    context_parts = []
+    if business_name:
+        context_parts.append(f"Business: {business_name}")
+    if usp:
+        context_parts.append(f"USP: {usp}")
+    if site_url:
+        context_parts.append(f"Website: {site_url}")
+    if headlines:
+        context_parts.append(f"Headlines: {', '.join(headlines[:2])}")
+
+    context = ". ".join(context_parts) if context_parts else "Generic business."
+    payload = f"{instructions}\n\nContext: {context}"
+
+    try:
+        client = GeminiClient(LLM_MODEL, temperature=0.5, retries=1)
+        resp = client.generate_json(payload)
+        cta_text = (resp or {}).get("cta_text", "").strip()
+
+        # Проверяем, что выбранный текст есть в списке
+        if cta_text in CTA_TEXTS:
+            logger.info("step14: LLM выбрала CTA текст: %s", cta_text)
+            return cta_text
+
+        logger.warning("step14: LLM вернула некорректный CTA текст (%s), используем Learn more", cta_text)
+        return "Learn more"
+
+    except Exception as exc:
+        logger.warning("step14: LLM выбор CTA текста не удался: %s", exc)
+        return "Learn more"
+
+
+def _llm_generate_business_name(
+    *,
+    business_name: Optional[str] = None,
+    usp: Optional[str] = None,
+    site_url: Optional[str] = None,
+) -> str:
+    """
+    Сгенерировать Business name через LLM (макс. 25 символов).
+    """
+    # Если уже есть business_name, обрезаем и используем его
+    if business_name:
+        truncated = _truncate_text(business_name, BUSINESS_NAME_MAX_LENGTH)
+        if truncated:
+            logger.info("step14: используем предоставленное business_name: %s", truncated)
+            return truncated
+
+    if STEP14_DISABLE_LLM or GeminiClient is None:
+        fallback = _truncate_text(business_name or usp or "My Business", BUSINESS_NAME_MAX_LENGTH)
+        logger.warning("step14: LLM отключена — fallback business_name: %s", fallback)
+        return fallback
+
+    instructions = (
+        f"Generate a concise business name for Google Ads. "
+        f"MUST be ≤{BUSINESS_NAME_MAX_LENGTH} characters. "
+        "Return ONLY JSON {\"business_name\": \"...\"}. "
+        "Make it professional and memorable."
+    )
+
+    context_parts = []
+    if business_name:
+        context_parts.append(f"Current name: {business_name}")
+    if usp:
+        context_parts.append(f"USP: {usp}")
+    if site_url:
+        context_parts.append(f"Website: {site_url}")
+
+    context = ". ".join(context_parts) if context_parts else "Generic business."
+    payload = f"{instructions}\n\nContext: {context}"
+
+    try:
+        client = GeminiClient(LLM_MODEL, temperature=0.7, retries=1)
+        resp = client.generate_json(payload)
+        generated_name = (resp or {}).get("business_name", "").strip()
+
+        if generated_name and len(generated_name) <= BUSINESS_NAME_MAX_LENGTH:
+            logger.info("step14: LLM сгенерировала business_name: %s", generated_name)
+            return generated_name
+
+        # Если слишком длинное, обрезаем
+        if generated_name:
+            truncated = _truncate_text(generated_name, BUSINESS_NAME_MAX_LENGTH)
+            logger.warning("step14: обрезаем business_name до %d символов: %s", BUSINESS_NAME_MAX_LENGTH, truncated)
+            return truncated
+
+        fallback = _truncate_text(business_name or usp or "My Business", BUSINESS_NAME_MAX_LENGTH)
+        logger.warning("step14: LLM вернула пустой ответ — fallback: %s", fallback)
+        return fallback
+
+    except Exception as exc:
+        fallback = _truncate_text(business_name or usp or "My Business", BUSINESS_NAME_MAX_LENGTH)
+        logger.warning("step14: LLM генерация business_name не удалась (%s) — fallback: %s", exc, fallback)
+        return fallback
+
+
+def _select_from_dropdown(
+    driver: WebDriver,
+    dropdown_button: WebElement,
+    item_text: str,
+    dropdown_type: str = "dropdown",
+) -> bool:
+    """
+    Выбрать элемент из dropdown меню.
+
+    Args:
+        driver: WebDriver
+        dropdown_button: элемент кнопки dropdown
+        item_text: текст элемента для выбора
+        dropdown_type: тип dropdown для логирования
+
+    Returns:
+        True если выбор успешен, False иначе
+    """
+    try:
+        # Кликнуть на dropdown
+        if not _js_click(driver, dropdown_button):
+            logger.warning("step14: не удалось кликнуть на %s dropdown", dropdown_type)
+            return False
+
+        time.sleep(0.5)
+
+        # Найти элемент с нужным текстом в списке
+        item = driver.execute_script(
+            """
+            const targetText = arguments[0];
+            const items = document.querySelectorAll('material-select-dropdown-item');
+            for (const item of items) {
+                const label = item.querySelector('.label');
+                if (label && label.textContent.trim() === targetText) {
+                    return item;
+                }
+            }
+            return null;
+            """,
+            item_text,
+        )
+
+        if not item:
+            logger.warning("step14: элемент '%s' не найден в %s dropdown", item_text, dropdown_type)
+            return False
+
+        # Кликнуть на элемент
+        if not _js_click(driver, item):
+            logger.warning("step14: не удалось кликнуть на элемент '%s'", item_text)
+            return False
+
+        time.sleep(0.3)
+        logger.info("step14: выбран элемент '%s' в %s", item_text, dropdown_type)
+        return True
+
+    except Exception as exc:
+        logger.warning("step14: ошибка выбора из %s dropdown: %s", dropdown_type, exc)
+        return False
+
+
+def _fill_cta_language(
+    driver: WebDriver,
+    language: str,
+) -> bool:
+    """
+    Выбрать язык для Call to Action.
+
+    Args:
+        driver: WebDriver
+        language: название языка (например, "Russian", "English (United States)")
+
+    Returns:
+        True если выбор успешен, False иначе
+    """
+    try:
+        # Найти блок Call to Action
+        cta_block = _wait_for_element(
+            driver,
+            'call-to-action',
+            timeout=5.0,
+            require_visible=False,
+        )
+
+        if not cta_block:
+            logger.warning("step14: блок Call to Action не найден")
+            return False
+
+        # Найти dropdown для языка (второй dropdown в блоке)
+        language_dropdown = driver.execute_script(
+            """
+            const ctaBlock = arguments[0];
+            const dropdowns = ctaBlock.querySelectorAll('dropdown-button');
+            if (dropdowns.length >= 2) {
+                return dropdowns[1]; // Второй dropdown - это язык
+            }
+            return null;
+            """,
+            cta_block,
+        )
+
+        if not language_dropdown:
+            logger.warning("step14: dropdown языка Call to Action не найден")
+            return False
+
+        return _select_from_dropdown(driver, language_dropdown, language, "CTA language")
+
+    except Exception as exc:
+        logger.warning("step14: ошибка выбора языка CTA: %s", exc)
+        return False
+
+
+def _fill_cta_text(
+    driver: WebDriver,
+    cta_text: str,
+) -> bool:
+    """
+    Выбрать текст для Call to Action.
+
+    Args:
+        driver: WebDriver
+        cta_text: текст CTA (например, "Learn more", "Shop now")
+
+    Returns:
+        True если выбор успешен, False иначе
+    """
+    try:
+        # Найти блок Call to Action
+        cta_block = _wait_for_element(
+            driver,
+            'call-to-action',
+            timeout=5.0,
+            require_visible=False,
+        )
+
+        if not cta_block:
+            logger.warning("step14: блок Call to Action не найден")
+            return False
+
+        # Найти dropdown для текста CTA (первый dropdown в блоке)
+        text_dropdown = driver.execute_script(
+            """
+            const ctaBlock = arguments[0];
+            const dropdowns = ctaBlock.querySelectorAll('dropdown-button');
+            if (dropdowns.length >= 1) {
+                return dropdowns[0]; // Первый dropdown - это текст CTA
+            }
+            return null;
+            """,
+            cta_block,
+        )
+
+        if not text_dropdown:
+            logger.warning("step14: dropdown текста Call to Action не найден")
+            return False
+
+        return _select_from_dropdown(driver, text_dropdown, cta_text, "CTA text")
+
+    except Exception as exc:
+        logger.warning("step14: ошибка выбора текста CTA: %s", exc)
+        return False
+
+
+def _fill_business_name_field(
+    driver: WebDriver,
+    business_name: str,
+) -> bool:
+    """
+    Заполнить поле Business name.
+
+    Args:
+        driver: WebDriver
+        business_name: название бизнеса (макс. 25 символов)
+
+    Returns:
+        True если заполнение успешно, False иначе
+    """
+    try:
+        # Найти input с aria-label="Business name"
+        business_input = _wait_for_element(
+            driver,
+            'input[aria-label="Business name"]',
+            timeout=5.0,
+            require_visible=True,
+        )
+
+        if not business_input:
+            logger.warning("step14: поле Business name не найдено")
+            return False
+
+        # Заполнить поле
+        truncated_name = _truncate_text(business_name, BUSINESS_NAME_MAX_LENGTH)
+
+        if _set_input_value(driver, business_input, truncated_name, verify=True):
+            logger.info("step14: Business name заполнено: '%s'", truncated_name)
+            return True
+
+        logger.warning("step14: не удалось заполнить Business name")
+        return False
+
+    except Exception as exc:
+        logger.warning("step14: ошибка заполнения Business name: %s", exc)
+        return False
 
 
 # --------------------------------------------------------------------------------------
@@ -555,11 +1195,12 @@ def run_step14(
     business_name: Optional[str] = None,
     usp: Optional[str] = None,
     site_url: Optional[str] = None,
+    languages: Optional[List[str]] = None,
     emit: Optional[Callable[[str], None]] = None,
 ) -> Dict[str, Any]:
     """
-    Заполнение текстовых креативов (Headlines и Descriptions).
-    
+    Заполнение текстовых креативов (Headlines, Descriptions, Call to Action, Business Name).
+
     Args:
         driver: WebDriver
         mode: режим работы ("ai_only", "inspired", "manual")
@@ -567,19 +1208,34 @@ def run_step14(
             {"headlines": [...], "descriptions": [...]}
         provided_assets: словарь с готовыми текстами для режима "manual"
             {"headlines": [...], "descriptions": [...]}
-        business_name: название бизнеса
+        business_name: название бизнеса (используется для генерации и заполнения)
         usp: УТП
         site_url: URL сайта
+        languages: список языков кампании (например, ["en", "ru"], ["English", "Russian"])
         emit: функция для вывода сообщений
-    
+
     Returns:
         Словарь с результатом:
         {
             "mode": str,
             "headlines": {"texts": [...], "count": int},
             "descriptions": {"texts": [...], "count": int},
-            "duration_ms": int
+            "call_to_action": {
+                "language": str,
+                "language_success": bool,
+                "text": str,
+                "text_success": bool
+            },
+            "business_name": {"value": str, "success": bool},
+            "duration_ms": int,
+            "timer_marks": [...]
         }
+
+    Новая функциональность:
+        - Определение языка контента и выбор соответствующего языка для CTA
+        - Генерация и выбор подходящего текста Call to Action через LLM
+        - Генерация или обрезка Business name (макс. 25 символов)
+        - Заполнение всех полей с подробным логированием
     """
     started = time.time()
     tm = TimerMarks()
@@ -616,12 +1272,14 @@ def run_step14(
             business_name=business_name,
             usp=usp,
             site_url=site_url,
+            languages=languages,
         )
         descriptions = _llm_generate_descriptions(
             count=MAX_DESCRIPTIONS,
             business_name=business_name,
             usp=usp,
             site_url=site_url,
+            languages=languages,
         )
         tm.mark("llm_generation")
     
@@ -639,12 +1297,13 @@ def run_step14(
                 seed_descriptions = [str(x).strip() for x in raw_d if str(x).strip()]
         
         _emit(emit, f"Генерация на основе примеров (заголовки: {len(seed_headlines)}, описания: {len(seed_descriptions)})")
-        
+
         headlines = _llm_generate_headlines(
             count=MAX_HEADLINES,
             business_name=business_name,
             usp=usp,
             site_url=site_url,
+            languages=languages,
             seed_examples=seed_headlines,
         )
         descriptions = _llm_generate_descriptions(
@@ -652,6 +1311,7 @@ def run_step14(
             business_name=business_name,
             usp=usp,
             site_url=site_url,
+            languages=languages,
             seed_examples=seed_descriptions,
         )
         tm.mark("inspired_generation")
@@ -719,21 +1379,93 @@ def run_step14(
         field_type="описания",
     )
     tm.mark("fill_descriptions")
-    
+
+    # ==================================================================================
+    # НОВАЯ ФУНКЦИОНАЛЬНОСТЬ: Call to Action и Business Name
+    # ==================================================================================
+
+    # Определить язык для CTA на основе переданных языков
+    _emit(emit, "Определение языка Call to Action")
+    detected_language = _detect_language_from_context(
+        languages=languages,
+        business_name=business_name,
+        usp=usp,
+        headlines=filled_headlines,
+        descriptions=filled_descriptions,
+    )
+    logger.info("step14: определен язык CTA: %s", detected_language)
+    tm.mark("detect_language")
+
+    # Выбрать язык Call to Action
+    _emit(emit, f"Выбор языка Call to Action: {detected_language}")
+    cta_language_success = _fill_cta_language(driver, detected_language)
+    if cta_language_success:
+        _emit(emit, f"✓ Язык CTA установлен: {detected_language}")
+    else:
+        _emit(emit, f"⚠ Не удалось установить язык CTA")
+    tm.mark("fill_cta_language")
+
+    # Сгенерировать и выбрать текст Call to Action через LLM
+    _emit(emit, "Генерация текста Call to Action через LLM")
+    selected_cta_text = _llm_select_cta_text(
+        business_name=business_name,
+        usp=usp,
+        site_url=site_url,
+        headlines=filled_headlines,
+    )
+    logger.info("step14: выбран текст CTA: %s", selected_cta_text)
+    tm.mark("llm_select_cta")
+
+    # Выбрать текст Call to Action
+    _emit(emit, f"Выбор текста Call to Action: {selected_cta_text}")
+    cta_text_success = _fill_cta_text(driver, selected_cta_text)
+    if cta_text_success:
+        _emit(emit, f"✓ Текст CTA установлен: {selected_cta_text}")
+    else:
+        _emit(emit, f"⚠ Не удалось установить текст CTA")
+    tm.mark("fill_cta_text")
+
+    # Сгенерировать Business name через LLM
+    _emit(emit, "Генерация Business name через LLM")
+    generated_business_name = _llm_generate_business_name(
+        business_name=business_name,
+        usp=usp,
+        site_url=site_url,
+    )
+    logger.info("step14: сгенерировано business_name: %s", generated_business_name)
+    tm.mark("llm_generate_business_name")
+
+    # Заполнить поле Business name
+    _emit(emit, f"Заполнение Business name: {generated_business_name}")
+    business_name_success = _fill_business_name_field(driver, generated_business_name)
+    if business_name_success:
+        _emit(emit, f"✓ Business name заполнено: {generated_business_name}")
+    else:
+        _emit(emit, f"⚠ Не удалось заполнить Business name")
+    tm.mark("fill_business_name")
+
     duration_ms = int((time.time() - started) * 1000)
-    
+
     logger.info(
-        "step14 done (%d ms) | заголовки=%d, описания=%d | mode=%s",
+        "step14 done (%d ms) | заголовки=%d, описания=%d | CTA=%s | business_name=%s | mode=%s",
         duration_ms,
         len(filled_headlines),
         len(filled_descriptions),
+        selected_cta_text if cta_text_success else "FAILED",
+        generated_business_name if business_name_success else "FAILED",
         normalized_mode,
     )
-    
+
     # Вывод итогов
-    _emit(emit, f"Заголовки: {', '.join(h[:30] + '...' if len(h) > 30 else h for h in filled_headlines)}")
-    _emit(emit, f"Описания: {', '.join(d[:40] + '...' if len(d) > 40 else d for d in filled_descriptions)}")
-    
+    _emit(emit, "=" * 60)
+    _emit(emit, "ИТОГИ ЗАПОЛНЕНИЯ:")
+    _emit(emit, f"Заголовки ({len(filled_headlines)}): {', '.join(h[:30] + '...' if len(h) > 30 else h for h in filled_headlines)}")
+    _emit(emit, f"Описания ({len(filled_descriptions)}): {', '.join(d[:40] + '...' if len(d) > 40 else d for d in filled_descriptions)}")
+    _emit(emit, f"CTA язык: {detected_language} {'✓' if cta_language_success else '✗'}")
+    _emit(emit, f"CTA текст: {selected_cta_text} {'✓' if cta_text_success else '✗'}")
+    _emit(emit, f"Business name: {generated_business_name} {'✓' if business_name_success else '✗'}")
+    _emit(emit, "=" * 60)
+
     return {
         "mode": normalized_mode,
         "headlines": {
@@ -743,6 +1475,16 @@ def run_step14(
         "descriptions": {
             "texts": filled_descriptions,
             "count": len(filled_descriptions),
+        },
+        "call_to_action": {
+            "language": detected_language,
+            "language_success": cta_language_success,
+            "text": selected_cta_text,
+            "text_success": cta_text_success,
+        },
+        "business_name": {
+            "value": generated_business_name,
+            "success": business_name_success,
         },
         "duration_ms": duration_ms,
         "timer_marks": tm.records,
